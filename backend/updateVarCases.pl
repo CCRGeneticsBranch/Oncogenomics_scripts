@@ -1,10 +1,5 @@
 #!/usr/bin/env perl
-# Note to developers debugging this code.  This code written by either Hsien Chao or Scott Goldweber 
-# This update script requires that there are at least one variant in the VAR_SAMPLES table for a particular patient.
-# If it does not exist, it will keep the case_name fields ='' in the CASES and SAMPLE_CASES table
-# Without the case_name information in the table, the application will not function\
-# HR added code to send email so the lab can manually review 
-# --HR 2019/08/15
+
 use strict;
 use warnings;
 use DBI;
@@ -15,9 +10,9 @@ require(dirname(abs_path($0))."/../lib/Onco.pm");
 
 my $default_case_name = "20160415";
 my $verbose = 0;
-my $out_path = dirname(abs_path($0))."/../../../site_data/storage/logs";
-$out_path = `realpath $out_path`;
-chomp $out_path;
+#my $out_path = dirname(abs_path($0))."/../../../site_data/storage/logs";
+#$out_path = `realpath $out_path`;
+#chomp $out_path;
 
 my $usage = <<__EOUSAGE__;
 
@@ -28,7 +23,6 @@ $0 [options]
 Options:
 
   -c  <string>  Default case name (default: $default_case_name)
-  -o  <string>  Output dir (default: $out_path)
   -v            Verbose output
   
 __EOUSAGE__

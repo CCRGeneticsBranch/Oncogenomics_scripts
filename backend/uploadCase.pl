@@ -33,7 +33,6 @@ my $target_case;
 my $url = getConfig("URL");
 my $production_url = getConfig("URL_PRODUCTION");
 my $db_name = "development";
-my $canonical_trans_list = "$app_path/storage/data/refseq_canonical.txt";
 my $update_list_file;
 my $skip_fusion = 0;
 my $replaced_old = 0;
@@ -69,7 +68,6 @@ Options:
   -a            Append annotation column table
   -g            Remove noncoding variants (annotated by AVIA)
   -t  <string>  Load type: (all,fusion,variants,tier,annotation,qc,cnv,antigen,exp,burden,genotyping,tcell_extrect,qci,mixcr), default: $load_type
-  -n  <string>  Canonical transcript list file (default: $canonical_trans_list)
   -x            Update expression data
   -k            Assign case id using case name.
   -y            Skip loading fusion
@@ -89,8 +87,7 @@ GetOptions (
   's' => \$use_sqlldr,
   'g' => \$remove_noncoding,
   'a' => \$insert_col,
-  'x' => \$refresh_exp,
-  'n=s' => \$canonical_trans_list,
+  'x' => \$refresh_exp,  
   'p=s' => \$target_patient,
   'c=s' => \$target_case,
   't=s' => \$load_type,
@@ -821,7 +818,7 @@ foreach my $patient_dir (@patient_dirs) {
 					my $filter_cmd = "perl ${script_dir}/filterRSEM.pl $rsem_file > $rsem_filtered_file";
 					#print("$filter_cmd\n");
 					system($filter_cmd);
-					system("chmod 775 $rsem_filtered_file");
+					system("chgrp ncif-www-onc-grp $rsem_filtered_file;chmod g+w $rsem_filtered_file");
 				}
 			}
 		}
@@ -1254,7 +1251,7 @@ sub insertCNVKit {
 	}
 	$dbh->commit();
 	system("$script_dir/run_reconCNV.sh $ratio_filename");
-	system("chmod 775 $cnv_dir/*");
+	system("chmod g+w $cnv_dir/*");
 	return 1;
 }
 

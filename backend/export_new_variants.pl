@@ -7,7 +7,7 @@ use Time::Piece;
 require(dirname(abs_path($0))."/../lib/Onco.pm");
 
 my $script_dir = abs_path(dirname(__FILE__));
-my $avia_path = abs_path($script_dir."/../../../site_data/avia/hg19");
+my $avia_path = abs_path($script_dir."/../../../avia/hg19");
 my $table_name="hg19_annot_oc";
 my $failed_file="$avia_path/failed.all.tsv";
 my $out_file;

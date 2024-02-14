@@ -15,7 +15,7 @@ my $table_name="hg19_annot_oc";
 my $has_header = 0;
 my $num_commit = -1;
 my $script_dir = abs_path(dirname(__FILE__));
-my $avia_path = abs_path($script_dir."/../../../site_data/avia/hg19");
+my $avia_path = abs_path($script_dir."/../../../avia/hg19");
 my $input_file = $avia_path."/annotation.tsv";
 my $usage = <<__EOUSAGE__;
 
