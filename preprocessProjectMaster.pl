@@ -160,7 +160,7 @@ foreach my $pid (keys %projects) {
 	if ($process_gt) {
 		system("$script_dir/backend/scoreProjectGenotypes.pl -p $pid");
 	}
-	system("chmod -R g+w $out_dir/$pid");
+	system("chgrp ncif-www-onc-grp $out_dir/$pid;chmod -R 770 $out_dir/$pid");
 	print "Total time for project $pid: $duration s\n";
 }
 $dbh->do("alter index PROJECT_VALUES_PK VISIBLE");

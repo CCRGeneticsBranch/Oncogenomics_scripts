@@ -50,7 +50,8 @@ do
 			update_list=${case_list_home}/${prefix}_caselist.txt
 			if [ ! -d ${project_home} ]; then
 				mkdir ${project_home}
-				chmod 775 ${project_home}
+				chmod 770 ${project_home}
+				chgrp ncif-www-onc-grp ${project_home}
 			fi
 			date >> ${log_file}
 			echo [`date +"%Y-%m-%d %H:%M:%S"`] "rsync ${succ_list_path} ${case_list_home}" >> ${log_file}
@@ -81,7 +82,8 @@ do
 					if [[ $status == "successful.txt" ]];then
 						
 						mkdir -p ${project_home}/${pat_id}
-						chmod g+w ${project_home}/${pat_id}
+						chmod 770 ${project_home}/${pat_id}
+						chgrp ncif-www-onc-grp ${project_home}/${pat_id}
 						#sync data file
 						if [ "$target_type" == "db" ];then
 							#echo ${pat_id}/${case_id}/${status} >> ${update_list}
@@ -90,12 +92,14 @@ do
 							echo [`date +"%Y-%m-%d %H:%M:%S"`] "syncing ${source_path}${folder} ${project_home}/${pat_id}" >> ${log_file}
 							#rsync -tirm --include '*/' --include "*.txt" --exclude "fusions.discarded.tsv" --include '*.SJ.out.tab' --include '*.SJ.out.bed.gz' --include '*.SJ.out.bed.gz.tbi' --include '*.star.final.bam.tdf' --include '*.tsv'  --include '*.vcf' --include "*.png" --include '*.pdf' --include "*.gt" --include "*.bwa.loh" --include "*hotspot.depth" --include "*.tmb" --include "*.status" --include "*selfSM" --include 'db/*' --include "*tracking" --include "qc/rnaseqc/*" --include "RSEM*/*" --include 'HLA/*' --include 'NeoAntigen/*' --include 'HLA/*' --include 'MHC_Class_I/*' --include 'sequenza/*' --include 'cnvkit/*' --include 'cnvTSO/*' --include '*fastqc/*' --exclude "TPM_*/" --exclude "log/" --exclude "igv/" --exclude "topha*/" --exclude "fusion/*" --exclude "calls/" --exclude '*' ${source_path}${folder} ${project_home}/${pat_id} 2>&1
 							rsync -e 'ssh -q' -tirm --include '*/' --include "*.txt" --include "*.html" --exclude "fusions.discarded.tsv" --include '*.SJ.out.tab' --include '*.SJ.out.bed.gz' --include '*.SJ.out.bed.gz.tbi' --include '*.star.final.bam.tdf' --include '*.tsv'  --include '*.vcf' --include "*.png" --include '*.pdf' --include "*.gt" --include "*.bwa.loh" --include "*hotspot.depth" --include "*.tmb" --include "*.status" --include "*selfSM" --include 'db/*' --include "*tracking" --include "*exonExpression*" --include "TPM_ENS/*" --include "qc/rnaseqc/*" --include "TPM_UCSC/*" --include "RSEM*/*" --include 'HLA/*' --include 'NeoAntigen/*' --include 'HLA/*' --include 'MHC_Class_I/*' --include 'sequenza/*' --include 'cnvkit/*' --include 'cnvTSO/*' --include '*fastqc/*' --include '*multiqc_data/*' --exclude "TPM_*/" --exclude "log/" --exclude "igv/" --exclude "topha*/" --exclude "fusion/*" --exclude "calls/" --exclude '*' ${source_path}${folder} ${project_home}/${pat_id} >> ${log_file}
-							chmod -R g+w ${project_home}/${pat_id}/${case_id}
+							chmod -R 770 ${project_home}/${pat_id}/${case_id}
+							chgrp -R ncif-www-onc-grp ${project_home}/${pat_id}/${case_id}
 						fi
 						if [ "$target_type" == "bam" ];then
 							if [ ! -d ${project_bam_home} ]; then
 								mkdir ${project_bam_home}
-								chmod g+w ${project_bam_home}
+								chmod 770 ${project_bam_home}
+								chgrp ncif-www-onc-grp ${project_bam_home}
 							fi
 							if [[ $project == "compass_tso500" ]];then
 								rsync -e 'ssh -q' -tirm -L --size-only --remove-source-files --exclude '*/*/*/*/' --include '*/' --include '*.bam*' --exclude '*' ${source_path}${folder} ${project_bam_home}/${pat_id} >>${log_file}
