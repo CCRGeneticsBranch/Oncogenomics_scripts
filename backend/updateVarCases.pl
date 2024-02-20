@@ -174,7 +174,8 @@ foreach my $patient_id (sort { $master_file_samples{$b} <=> $master_file_samples
 #close(NOT_PIPELINE);
 #close(PARTIAL_PROCESSED);
 #close(NEW_PATIENT);
-$dbh->do("update sample_case_mapping s set case_id=case_name, match_type='matched case_name' where exists(select * from processed_cases v where s.patient_id=v.patient_id and v.case_id=s.case_name) and case_id is null");
+#$dbh->do("update sample_case_mapping s set case_id=case_name, match_type='matched case_name' where exists(select * from processed_cases v where s.patient_id=v.patient_id and v.case_id=s.case_name) and case_id is null");
+$dbh->do("update sample_case_mapping s set case_id=case_name, match_type='matched case_name' where exists(select * from processed_cases v where s.patient_id=v.patient_id and v.case_id=s.case_name)");
 $dbh->do("update sample_case_mapping s set case_id='', match_type='not_matched' where exists(select * from processed_cases p where s.patient_id=p.patient_id and s.case_id=p.case_id and p.path like 'compass%') and case_id <> case_name");
 $dbh->commit();
 

@@ -16,7 +16,7 @@ script_home=`dirname $script_file`
 data_home=`realpath ${script_home}/../../../storage/ProcessedResults`
 out_dir=`realpath $data_home/../data_integrity_report`
 echo "output dir: $out_dir";
-project_file=$script_home/project_mapping.txt
+project_file=$script_home/../../../storage/sync/project_mapping.txt
 echo "project_file = $project_file";
 echo -e "Project\tPath\tPatient_ID\tCase_ID\tBiowulf\tFrederick" > ${out_dir}/processed_list/diff_case_list.txt
 while IFS=$'\t' read -r -a cols

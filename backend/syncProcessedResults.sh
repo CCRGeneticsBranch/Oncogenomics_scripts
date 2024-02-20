@@ -20,10 +20,12 @@ data_home=${home}/storage/ProcessedResults
 sync_home=${home}/storage/sync
 log_home=${sync_home}/logs/`date +"%Y-%m"`
 case_list_home=${sync_home}/case_list/`date +"%Y-%m"`
+slurm_log_home=${sync_home}/slurm_log/`date +"%Y-%m"`
 mkdir -p $log_home
 mkdir -p $case_list_home
+mkdir -p $slurm_log_home
 
-log_file=$log_home/`date +"%Y-%m-%d-%H:%M:%S"`.sync.log
+log_file=$log_home/`date +"%Y-%m-%d-%H:%M:%S"`.$target_type.log
 bam_home=${home}/storage/bams
 script_lib_home=`realpath ${script_home}/../lib`
 db_name=$target_db
@@ -54,13 +56,15 @@ do
 				chgrp ncif-www-onc-grp ${project_home}
 			fi
 			date >> ${log_file}
-			echo [`date +"%Y-%m-%d %H:%M:%S"`] "rsync ${succ_list_path} ${case_list_home}" >> ${log_file}
-			rsync -e 'ssh -q' ${succ_list_path} ${case_list_home} 
+			echo [`date +"%Y-%m-%d %H:%M:%S"`] "rsync ${succ_list_path} ${case_list_home}/" >> ${log_file}
+			rsync -e 'ssh -q' ${succ_list_path} ${case_list_home}/ 
 
 			if [ -s ${case_list_home}/new_list_${project}.txt ];then
 				cut -d' ' -f1 ${case_list_home}/new_list_${project}.txt | awk -F/ '{print $(NF-2)"/"$(NF-1)"/"$(NF)}' > $update_list				
 			fi
-			rm -f ${case_list_home}/new_list_${project}.txt			
+			if [ -f ${case_list_home}/new_list_${project}.txt ];then
+				rm ${case_list_home}/new_list_${project}.txt
+			fi
 		else
 			#if type is tier or bam, then use the last update/sync list			
 			if ls  ${case_list_home}/*_${project}_db_caselist.txt 1> /dev/null 2>&1;then
@@ -82,29 +86,30 @@ do
 					if [[ $status == "successful.txt" ]];then
 						
 						mkdir -p ${project_home}/${pat_id}
-						chmod 770 ${project_home}/${pat_id}
-						chgrp ncif-www-onc-grp ${project_home}/${pat_id}
+						chmod -f 770 ${project_home}/${pat_id}
+						chgrp -f ncif-www-onc-grp ${project_home}/${pat_id}
 						#sync data file
 						if [ "$target_type" == "db" ];then
 							#echo ${pat_id}/${case_id}/${status} >> ${update_list}
 							echo [`date +"%Y-%m-%d %H:%M:%S"`] "deleting old case..." >> ${log_file}
 							perl ${script_home}/deleteCase.pl -p ${pat_id} -c ${case_id} -t ${project} -r >> ${log_file}
 							echo [`date +"%Y-%m-%d %H:%M:%S"`] "syncing ${source_path}${folder} ${project_home}/${pat_id}" >> ${log_file}
-							#rsync -tirm --include '*/' --include "*.txt" --exclude "fusions.discarded.tsv" --include '*.SJ.out.tab' --include '*.SJ.out.bed.gz' --include '*.SJ.out.bed.gz.tbi' --include '*.star.final.bam.tdf' --include '*.tsv'  --include '*.vcf' --include "*.png" --include '*.pdf' --include "*.gt" --include "*.bwa.loh" --include "*hotspot.depth" --include "*.tmb" --include "*.status" --include "*selfSM" --include 'db/*' --include "*tracking" --include "qc/rnaseqc/*" --include "RSEM*/*" --include 'HLA/*' --include 'NeoAntigen/*' --include 'HLA/*' --include 'MHC_Class_I/*' --include 'sequenza/*' --include 'cnvkit/*' --include 'cnvTSO/*' --include '*fastqc/*' --exclude "TPM_*/" --exclude "log/" --exclude "igv/" --exclude "topha*/" --exclude "fusion/*" --exclude "calls/" --exclude '*' ${source_path}${folder} ${project_home}/${pat_id} 2>&1
+							#rsync -tirm --include '*/' --include "*.txt" --exclude "dag*.png" --exclude "fusions.discarded.tsv" --include '*.SJ.out.tab' --include '*.SJ.out.bed.gz' --include '*.SJ.out.bed.gz.tbi' --include '*.star.final.bam.tdf' --include '*.tsv'  --include '*.vcf' --include "*.png" --include '*.pdf' --include "*.gt" --include "*.bwa.loh" --include "*hotspot.depth" --include "*.tmb" --include "*.status" --include "*selfSM" --include 'db/*' --include "*tracking" --include "qc/rnaseqc/*" --include "RSEM*/*" --include 'HLA/*' --include 'NeoAntigen/*' --include 'HLA/*' --include 'MHC_Class_I/*' --include 'sequenza/*' --include 'cnvkit/*' --include 'cnvTSO/*' --include '*fastqc/*' --exclude "TPM_*/" --exclude "log/" --exclude "igv/" --exclude "topha*/" --exclude "fusion/*" --exclude "calls/" --exclude '*' ${source_path}${folder} ${project_home}/${pat_id} 2>&1
 							rsync -e 'ssh -q' -tirm --include '*/' --include "*.txt" --include "*.html" --exclude "fusions.discarded.tsv" --include '*.SJ.out.tab' --include '*.SJ.out.bed.gz' --include '*.SJ.out.bed.gz.tbi' --include '*.star.final.bam.tdf' --include '*.tsv'  --include '*.vcf' --include "*.png" --include '*.pdf' --include "*.gt" --include "*.bwa.loh" --include "*hotspot.depth" --include "*.tmb" --include "*.status" --include "*selfSM" --include 'db/*' --include "*tracking" --include "*exonExpression*" --include "TPM_ENS/*" --include "qc/rnaseqc/*" --include "TPM_UCSC/*" --include "RSEM*/*" --include 'HLA/*' --include 'NeoAntigen/*' --include 'HLA/*' --include 'MHC_Class_I/*' --include 'sequenza/*' --include 'cnvkit/*' --include 'cnvTSO/*' --include '*fastqc/*' --include '*multiqc_data/*' --exclude "TPM_*/" --exclude "log/" --exclude "igv/" --exclude "topha*/" --exclude "fusion/*" --exclude "calls/" --exclude '*' ${source_path}${folder} ${project_home}/${pat_id} >> ${log_file}
-							chmod -R 770 ${project_home}/${pat_id}/${case_id}
-							chgrp -R ncif-www-onc-grp ${project_home}/${pat_id}/${case_id}
+							chmod -R -f 770 ${project_home}/${pat_id}/${case_id}
+							chgrp -R -f ncif-www-onc-grp ${project_home}/${pat_id}/${case_id}
 						fi
 						if [ "$target_type" == "bam" ];then
 							if [ ! -d ${project_bam_home} ]; then
 								mkdir ${project_bam_home}
-								chmod 770 ${project_bam_home}
-								chgrp ncif-www-onc-grp ${project_bam_home}
+								chmod -f 770 ${project_bam_home}
+								chgrp -f ncif-www-onc-grp ${project_bam_home}
 							fi
 							if [[ $project == "compass_tso500" ]];then
 								rsync -e 'ssh -q' -tirm -L --size-only --remove-source-files --exclude '*/*/*/*/' --include '*/' --include '*.bam*' --exclude '*' ${source_path}${folder} ${project_bam_home}/${pat_id} >>${log_file}
 							else
 								#echo "rsync -tirm -L --size-only --remove-source-files --exclude '*/*/*/*/' --include '*/' --include '*bwa.final.squeeze.bam*' --include '*star.final.squeeze.bam*' --exclude '*' ${source_path}${folder} ${project_home}/${pat_id} >>${log_file} 2>&1"
+								echo "rsync rsync -e 'ssh -q' -tirm -L --size-only --remove-source-files --exclude '*/*/*/*/' --include '*/' --include '*final.squeeze.bam*' --include '*star.fusions.bam*' --exclude '*' ${source_path}${folder} ${project_bam_home}/${pat_id}" >>${log_file}
 								rsync -e 'ssh -q' -tirm -L --size-only --remove-source-files --exclude '*/*/*/*/' --include '*/' --include '*final.squeeze.bam*' --include '*star.fusions.bam*' --exclude '*' ${source_path}${folder} ${project_bam_home}/${pat_id} >>${log_file}
 							fi
 						fi				
@@ -127,8 +132,8 @@ do
 							LC_ALL="en_US.utf8" perl ${script_home}/updateVarCases.pl
 							#submit this to batch server
 							if [ -s ${update_list} ];then
-								echo [`date +"%Y-%m-%d %H:%M:%S"`] "sbatch -D ${home}/app/scripts/slurm -o ${home}/app/scripts/slurm/slurm_log/${prefix}.preprocessProject.o -e ${home}/app/scripts/slurm/slurm_log/${prefix}.preprocessProject.e ${home}/app/scripts/slurm/submitPreprocessProject.sh ${update_list} $emails $url" >> ${log_file}
-								sbatch -D ${home}/app/scripts/slurm -o ${home}/app/scripts/slurm/slurm_log/${prefix}.preprocessProject.o -e ${home}/app/scripts/slurm/slurm_log/${prefix}.preprocessProject.e ${home}/app/scripts/slurm/submitPreprocessProject.sh ${update_list} $emails $url
+								echo [`date +"%Y-%m-%d %H:%M:%S"`] "sbatch -D ${home}/app/scripts/slurm -o ${slurm_log_home}/${prefix}.preprocessProject.o -e ${slurm_log_home}/${prefix}.preprocessProject.e ${home}/app/scripts/slurm/submitPreprocessProject.sh ${update_list} $emails $url" >> ${log_file}
+								sbatch -D ${home}/app/scripts/slurm -o ${slurm_log_home}/${prefix}.preprocessProject.o -e ${slurm_log_home}/${prefix}.preprocessProject.e ${home}/app/scripts/slurm/submitPreprocessProject.sh ${update_list} $emails $url
 							fi							
 						fi						
 					else
@@ -142,8 +147,8 @@ do
 						LC_ALL="en_US.utf8" perl ${script_home}/uploadCase.pl -i ${project_home} -o $project_desc -l ${update_list} -d ${db_name_pub} -u ${url} -t tier 2>&1 1>>${log_file}
 						LC_ALL="en_US.utf8" perl ${script_home}/updateVarCases.pl
 						if [ -s ${update_list} ];then
-							echo [`date +"%Y-%m-%d %H:%M:%S"`] "sbatch -D ${home}/app/scripts -o ${home}/storage/logs/slurm/${prefix}.preprocessProject.o -e ${home}/storage/logs/slurm/${prefix}.preprocessProject.e ${home}/app/scripts/submitPreprocessProject.sh ${update_list} $emails $url"
-							sbatch -D ${home}/app/scripts/slurm -o ${home}/app/scripts/slurm/slurm_log/${prefix}.preprocessProject.o -e ${home}/app/scripts/slurm/slurm_log/${prefix}.preprocessProject.e ${home}/app/scripts/slurm/submitPreprocessProject.sh ${update_list} $emails $url
+							echo [`date +"%Y-%m-%d %H:%M:%S"`] "sbatch -D ${home}/app/scripts -o ${slurm_log_home}/${prefix}.preprocessProject.o -e ${slurm_log_home}/${prefix}.preprocessProject.e ${home}/app/scripts/submitPreprocessProject.sh ${update_list} $emails $url"
+							sbatch -D ${home}/app/scripts/slurm -o ${slurm_log_home}/${prefix}.preprocessProject.o -e ${slurm_log_home}/${prefix}.preprocessProject.e ${home}/app/scripts/slurm/submitPreprocessProject.sh ${update_list} $emails $url
 						fi
 					fi
 			fi		
@@ -155,7 +160,7 @@ do
 		
 #	fi
 done < $project_file
-exit
+
 if [ "$target_type" == "db" ];then
 	echo [`date +"%Y-%m-%d %H:%M:%S"`] "refreshing views -c -p -h" >> ${log_file}
 	LC_ALL="en_US.utf8" ${script_home}/refreshViews.pl -c -p -h >> ${log_file}

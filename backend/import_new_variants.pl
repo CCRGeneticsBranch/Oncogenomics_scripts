@@ -109,7 +109,7 @@ print_log("Done. ".$total_insert." records inserted");
 my $folder = "$avia_path/archives/".localtime->strftime('%Y-%m');
 my $arch_file = $folder."/annotation.".localtime->strftime('%Y_%m_%d_%H_%M').".tsv";
 system("mkdir -p $folder");
-system("chmod 775 $folder");
+system("chmod 770 $folder");
 system("mv $input_file $arch_file");
 system("cat $avia_path/failed.tsv >> $avia_path/failed.all.tsv");
 close(IN_FILE);

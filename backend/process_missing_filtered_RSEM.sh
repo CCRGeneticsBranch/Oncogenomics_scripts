@@ -1,0 +1,1 @@
+for in in $PROD_HOME/storage/ProcessedResults/compass_exome/*/*/*/RSEM/*.rsem.genes.results;do out=`echo $in | sed s/rsem/rsem_ENS/`;if [ ! -s $out ];then echo $in $out;$PROD_HOME/app/scripts/backend/filterRSEM.pl $in > $out;chgrp ncif-www-onc-grp $out;chmod 770 $out;fi;done

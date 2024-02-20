@@ -73,7 +73,7 @@ my $script_dir = dirname(__FILE__);
 my $dbh = getDBI();
 my $sid = getDBSID();
 
-my $main_column_file = "$script_dir/../../../storage/data/main_columns.txt";
+my $main_column_file = "$script_dir/../../metadata/main_columns.txt";
 open(MAIN_COL_FILE, "$main_column_file") or die "Cannot open file $main_column_file";
 my %main_cols = ();
 

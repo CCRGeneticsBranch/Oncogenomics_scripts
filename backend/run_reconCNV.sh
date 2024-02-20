@@ -6,7 +6,7 @@ script_home=`dirname $script_file`
 reconCNV_home=`realpath ${script_home}/../../bin/reconCNV`
 
 if [ ! -f ${bn}.html ];then
-	source /var/www/html/miniconda3/etc/profile.d/conda.sh 
+	source /mnt/projects/CCR-JK-oncogenomics/static/miniconda3/etc/profile.d/conda.sh 
 	conda activate reconCNV
 	cleaned_cnr=${bn}.nochrM_Y.cnr
 	grep -v '^chrM' $in | grep -v '^chrY' > ${cleaned_cnr}

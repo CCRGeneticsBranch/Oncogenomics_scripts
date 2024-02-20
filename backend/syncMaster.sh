@@ -14,8 +14,8 @@ script_file=`realpath $0`
 script_path=`dirname $script_file`
 home=`realpath ${script_path}/../../../..`
 script_home_production=$script_path
-script_home_dev=${home}/clinomicsd/app/scripts/backend
-script_home_public=${home}/clinomics_public/app/scripts/backend
+script_home_dev=${home}/dev/app/scripts/backend
+script_home_public=${home}/pub/app/scripts/backend
 data_home=${script_home_production}/../../metadata
 todaysdate=`date "+%Y%m%d-%H%M"`;
 
@@ -38,7 +38,7 @@ do
 		modify_time=`stat --printf=%y $data_home/$file`
 	fi
 	if [ -z $projects ];then
-		rsync -e 'ssh -q' -aiz ${src_file} $data_home/
+		rsync -e 'ssh -q' -tiz ${src_file} $data_home/
 		new_modify_time=`stat --printf=%y $data_home/$file`
 		[ "$modify_time" =  "$new_modify_time" ] ; modified=$?
 		if [ $modified = "1" ];then 
@@ -63,7 +63,7 @@ if [ -z $projects ];then
 		perl $script_home_production/syncMaster.pl -u -n production -i $file_list -m $flag_list -g $project_group_list
 		perl $script_home_production/runDBQuery.pl "select distinct patient_id,case_name from sample_case_mapping order by patient_id" > ${data_home}/case_list.txt
 		echo `date +"%Y-%m-%d %H:%M:%S"` "$script_home_production/runDBQuery.pl \"select distinct patient_id,case_name from sample_case_mapping order by patient_id\" > ${data_home}/case_list.txt"
-		scp ${data_home}/case_list.txt helix:/data/Clinomics/MasterFiles/	
+		scp ${data_home}/case_list.txt chouh@helix.nih.gov:/data/Clinomics/MasterFiles/	
 		echo `date +"%Y-%m-%d %H:%M:%S"` "Uploading development database..."
 		echo `date +"%Y-%m-%d %H:%M:%S"` "$script_home_dev/syncMaster.pl -u -n production -i $file_list -m $flag_list -g $project_group_list"		
 		perl $script_home_dev/syncMaster.pl -u -n development -i $file_list -m $flag_list -g $project_group_list

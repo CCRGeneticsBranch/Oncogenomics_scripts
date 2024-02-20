@@ -12,7 +12,7 @@ require(dirname(abs_path($0))."/../lib/Onco.pm");
 my $script_dir = dirname(__FILE__);
 
 my $production_url = getConfig("URL_PRODUCTION");
-my $project_file = abs_path($script_dir."/project_mapping.txt");
+my $project_file = abs_path($script_dir."/../../../storage/sync/project_mapping.txt");
 my %project_mapping = ();
 open (PRJ, $project_file);
 while(<PRJ>){
@@ -67,7 +67,7 @@ while(<DIFF_CASES>) {
   if ($#fields == 5) {
     my ($path,$biowulf_path,$patient_id,$case_id,$biowulf,$frederick) = @fields;
     next if ($path eq "roper");
-    $biowulf_path =~ s/helix\.nih\.gov://;
+    $biowulf_path =~ s/chouh\@helix\.nih\.gov://;
     if ($biowulf eq "Y") {
       push @{$report{"cases_on_Biowulf_only"}{$path}}, join("\t", ($patient_id,$case_id,$path,$biowulf_path));
       print CASES_BIOWULF join("\t", ($patient_id,$case_id,$path,$biowulf_path))."\n";
