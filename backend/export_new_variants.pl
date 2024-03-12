@@ -62,12 +62,9 @@ while (my @row = $sth_novel->fetchrow_array) {
   my $key = $row[0].":".$row[1];
   if (!exists $failed_vars{$key}) {
 	 print OUT_FILE join("\t",@row)."\n";
-  } else {
-    print "$key in unmapped table\n";
-  }
-
+  } 
 }
 close(OUT_FILE);
-system("chmod 775 $out_file");
+system("chmod 770 $out_file");
 $dbh->disconnect();
 print_log("Done");

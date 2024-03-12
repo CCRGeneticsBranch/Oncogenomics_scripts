@@ -55,9 +55,9 @@ if (!$out_dir) {
 
 my $dbh = getDBI();
 
-my $cnv_table = "var_cnv_genes";
+my $cnv_table = "var_cnv_segment";
 if ($type eq "cnvkit") {
-  $cnv_table = "var_cnvkit_genes";
+  $cnv_table = "var_cnvkit_segment";
 }
 my $cnt_sql = "select count(*) as cnt from $cnv_table c, project_samples p where c.sample_id=p.sample_id and project_id=$project_id";
 my $sth_cnv_cnt = $dbh->prepare($cnt_sql);
@@ -72,7 +72,7 @@ if (my ($cnt) = $sth_cnv_cnt->fetchrow_array) {
 }
 $sth_cnv_cnt->finish;
 
-my $sql = "select distinct c.patient_id, c.case_id, c.sample_id, c.sample_name from $cnv_table c, project_samples p where c.sample_id=p.sample_id and project_id=$project_id";
+my $sql = "select distinct c.patient_id, c.case_id, c.sample_id from $cnv_table c, project_samples p where c.sample_id=p.sample_id and project_id=$project_id";
 #print "$sql\n";
 print "downloading CNV data for project $project_id\n";
 my $sth_cnv = $dbh->prepare($sql);
@@ -80,15 +80,14 @@ $sth_cnv->execute();
 
 system("mkdir -p $out_dir/$project_id/cnv");
 my $summary_file = "$out_dir/$project_id/cnv/$project_id.$type.summary.tsv";
-system("echo -e 'Patient ID\tCase ID\tSample ID\tSample Name\tNon-diploid Length\tTotal Length\tRatio\tA\tC\tGI\tTotal segments' > $summary_file");
-my %samples = ();
-while (my ($patient_id, $case_id, $sample_id, $sample_name) = $sth_cnv->fetchrow_array) {
-  $samples{$sample_name} = '';
+system("echo -e 'Patient ID\tCase ID\tSample ID\tNon-diploid Length\tTotal Length\tRatio\tA\tC\tGI\tTotal segments' > $summary_file");
+while (my ($patient_id, $case_id, $sample_id) = $sth_cnv->fetchrow_array) {
   my $out_file_tmp = "$out_dir/$project_id/cnv/$patient_id-$case_id-$sample_id.$type.tmp";
   my $out_file = "$out_dir/$project_id/cnv/$patient_id-$case_id-$sample_id.$type.txt";
-  system("curl -X POST -F patient_id=$patient_id -F case_id=$case_id -F sample_id=$sample_id -F source=$type $url > $out_file_tmp");
+  #system("curl -X POST -F patient_id=$patient_id -F case_id=$case_id -F sample_id=$sample_id -F source=$type $url > $out_file_tmp");
+  system("curl $url/$patient_id/$case_id/$sample_id/$type > $out_file_tmp");
   if ($type eq "sequenza") {
-    system("echo -e '".$patient_id."\\t".$case_id."\\t".$sample_id."\\t".$sample_name."\\t\\c' >> $summary_file");
+    system("echo -e '".$patient_id."\\t".$case_id."\\t".$sample_id."\\t\\c' >> $summary_file");
     system("head -2 $out_file_tmp | tail -1 >> $summary_file");
     system("tail -n +3 $out_file_tmp > $out_file");
   } else {

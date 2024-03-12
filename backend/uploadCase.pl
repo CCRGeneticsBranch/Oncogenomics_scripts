@@ -141,7 +141,10 @@ my $sth_var_qci = $dbh->prepare("insert /*+ APPEND */ into var_qci values(?,?,?,
 my $sth_var_qci_annotation = $dbh->prepare("insert /*+ APPEND */ into var_qci_annotation values(?,?,?,?,?,?,?,?,?,?,?)");
 my $sth_var_qci_summary = $dbh->prepare("insert /*+ APPEND */ into var_qci_summary values(?,?,?,?,?)");
 my $sth_cnv = $dbh->prepare("insert into var_cnv values(?,?,?,?,?,?,?,?,?,?)");
+my $sth_cnv_segment = $dbh->prepare("insert into var_cnv_segment values(?,?,?,?,?,?,?,?,?,?,?)");
+my $sth_cnv_gene = $dbh->prepare("insert into var_cnv_gene_level values(?,?,?,?,?,?,?,?,?,?)");
 my $sth_cnvkit = $dbh->prepare("insert into var_cnvkit values(?,?,?,?,?,?,?,?,?,?)");
+my $sth_cnvkit_segment = $dbh->prepare("insert into var_cnvkit_segment values(?,?,?,?,?,?,?,?,?,?,?)");
 my $sth_cnvkit_gene = $dbh->prepare("insert into var_cnvkit_gene_level values(?,?,?,?,?,?,?,?,?,?,?)");
 my $sth_cnvtso = $dbh->prepare("insert into var_cnvtso values(?,?,?,?,?,?,?,?,?)");
 my $sth_tcell_extrect = $dbh->prepare("insert into tcell_extrect values(?,?,?,?,?,?,?)");
@@ -681,13 +684,13 @@ foreach my $patient_dir (@patient_dirs) {
 				$d = &formatDir($d);
 				my $folder_name = basename($d);				
 				try {					
-					my $ret = &insertCNV($dir, $folder_name, $patient_id, $case_id);
-					my $retkit = &insertCNVKit($dir, $folder_name, $patient_id, $case_id);
+					my $ret = &insertCNV($dir, $folder_name, $patient_id, $case_id);					
 					my $rettso = &insertCNVTSO500($dir, $folder_name, $patient_id, $case_id);
-					if ($ret || $retkit || $rettso) {
+					if ($ret || $rettso) {
 						$inserted = 1;
 					}
 				} catch {
+					print_log("Error in CNV gene: $_");
 					push(@errors, "$patient_id\t$case_id\tCNV\t$_");
 				};				
 			}	
@@ -697,18 +700,20 @@ foreach my $patient_dir (@patient_dirs) {
 		}
 
 		#process CNV gene level
-		if ($load_type eq "all" || $load_type eq "cnv_gene") {
+		if ($load_type eq "all" || $load_type eq "cnvkit") {
 			my @sample_dirs = grep { -d } glob $case_dir."*";
 			my $inserted = 0;
 			foreach my $d (@sample_dirs) {
 				$d = &formatDir($d);
 				my $folder_name = basename($d);				
 				try {					
+					my $retkit = &insertCNVKit($dir, $folder_name, $patient_id, $case_id);
 					my $retkitgene = &insertCNVKitGene($dir, $folder_name, $patient_id, $case_id);					
-					if ($retkitgene) {
+					if ($retkit || $retkitgene) {
 						$inserted = 1;
 					}
 				} catch {
+					print_log("Error in CNV gene: $_");
 					push(@errors, "$patient_id\t$case_id\tCNV\t$_");
 				};				
 			}	
@@ -1177,7 +1182,10 @@ sub insertBurden {
 
 sub insertCNV {
 	my ($dir, $folder_name, $patient_id, $case_id) = @_;	
-	my $filename = $dir.$patient_id."/$case_id/$folder_name/sequenza/$folder_name/$folder_name"."_segments.txt";
+	my $cnv_dir = $dir.$patient_id."/$case_id/$folder_name/sequenza";
+	my $filename = "$cnv_dir/$folder_name/$folder_name"."_segments.txt";
+	my $gene_segment_filename = "$cnv_dir/$folder_name".".segments.genes.bed";
+	my $gene_level_filename = "$cnv_dir/$folder_name"."_genelevel.txt";
 	#print $filename."\n";
 	if (!-e $filename) {
 		return 0;
@@ -1212,7 +1220,44 @@ sub insertCNV {
 	}
 	$dbh->commit();
 	#system("$script_dir/run_reconCNV_sequenza.sh $filename");
-	return 1;
+	#intersect gene file with segment
+	system("$script_dir/gen_sequenza_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed");
+	if ( -e $gene_segment_filename) {
+		open (GENE_SEG_FILE, "$gene_segment_filename");
+		print_log("processing sequenza gene segments: $gene_segment_filename");
+		$dbh->do("delete var_cnv_segment where case_id = '$case_id' and patient_id = '$patient_id'");
+		while(<GENE_SEG_FILE>) {
+			chomp;
+			my @fields = split(/\t/);
+			next if ($#fields == 0);
+			my $cnt = $fields[3];
+			my $lpp = $fields[6];
+			$lpp =~ s/Inf/99999999/;
+			next if ($cnt eq "NA");
+			$sth_cnv_segment->execute($patient_id, $case_id, $sample_id, $fields[0], $fields[1], $fields[2], $fields[3], $fields[4], $fields[5], $lpp, $fields[7]);
+		}
+		close(GENE_SEG_FILE);
+		$dbh->commit();
+	}
+	#get gene level file. Generate gene level file only if the pipeline does not generate one
+	system("$script_dir/gen_sequenza_gene_level.sh $filename $script_dir/../../ref/hg19.genes.coding.bed");
+	if ( -e $gene_level_filename) {
+		open (GENE_LEVEL_FILE, "$gene_level_filename");
+		print_log("processing sequenza gene level: $gene_level_filename");
+		$dbh->do("delete var_cnv_gene_level where case_id = '$case_id' and patient_id = '$patient_id'");
+		<GENE_LEVEL_FILE>;
+		while(<GENE_LEVEL_FILE>) {
+			chomp;
+			my @fields = split(/\t/);
+			next if ($#fields == 0);			
+			$sth_cnv_gene->execute($patient_id, $case_id, $sample_id, $fields[0], $fields[1], $fields[2], $fields[3], $fields[4], $fields[5], $fields[6]);
+		}
+		close(GENE_LEVEL_FILE);
+		$dbh->commit();
+	}
+
+	system("chgrp -f ncif-www-onc-grp $cnv_dir/*;chmod -f 770 $cnv_dir/*");
+	return 1;	
 }
 
 sub insertCNVKit {
@@ -1220,6 +1265,7 @@ sub insertCNVKit {
 	my $cnv_dir = $dir.$patient_id."/$case_id/$folder_name/cnvkit";
 	my $filename = "$cnv_dir/$folder_name".".cns";
 	my $ratio_filename = "$cnv_dir/$folder_name".".cnr";
+	my $gene_segment_filename = "$cnv_dir/$folder_name".".segments.genes.bed";
 	#print $filename."\n";
 	if (!-e $filename) {
 		return 0;
@@ -1251,7 +1297,21 @@ sub insertCNVKit {
 	}
 	$dbh->commit();
 	system("$script_dir/run_reconCNV.sh $ratio_filename");
-	system("chgrp ncif-www-onc-grp $cnv_dir/*;chmod g+rw $cnv_dir/*");
+	system("$script_dir/gen_cnvkit_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed");
+	if ( -e $gene_segment_filename) {
+		open (GENE_SEG_FILE, "$gene_segment_filename");
+		print_log("processing CNVKit gene segments: $gene_segment_filename");
+		$dbh->do("delete var_cnvkit_segment where case_id = '$case_id' and patient_id = '$patient_id'");
+		while(<GENE_SEG_FILE>) {
+			chomp;
+			my @fields = split(/\t/);
+			next if ($#fields == 0);
+			$sth_cnvkit_segment->execute($patient_id, $case_id, $sample_id, $fields[0], $fields[1], $fields[2], $fields[3], $fields[4], $fields[5], $fields[6], $fields[7]);
+		}
+		close(GENE_SEG_FILE);
+		$dbh->commit();
+	}
+	system("chgrp -f ncif-www-onc-grp $cnv_dir/*;chmod -f 770 $cnv_dir/*");
 	return 1;
 }
 

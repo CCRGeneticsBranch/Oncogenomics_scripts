@@ -48,10 +48,10 @@ if (!$type) {
 
 my $dbh = getDBI();
 
-my $cnv_table = "var_cnv_genes";
+my $cnv_table = "var_cnv_gene_level";
 my $fn = "cnt";
 if ($type eq "cnvkit") {
-  $cnv_table = "var_cnvkit_genes";
+  $cnv_table = "var_cnvkit_gene_level";
   $fn = "log2";
 }
 my $cnt_sql = "select count(*) as cnt from $cnv_table c, project_samples p where c.sample_id=p.sample_id and project_id=$project_id";
@@ -67,7 +67,7 @@ if (my ($cnt) = $sth_cnv_cnt->fetchrow_array) {
 }
 $sth_cnv_cnt->finish;
 
-my $sql = "select distinct c.sample_name,gene,$fn from $cnv_table c, project_samples p where c.sample_id=p.sample_id and project_id=$project_id";
+my $sql = "select distinct c.sample_id,gene,$fn from $cnv_table c, project_samples p where c.sample_id=p.sample_id and project_id=$project_id";
 #print "$sql\n";
 print "generating CNV matrix for project $project_id\n";
 my $sth_cnv = $dbh->prepare($sql);
@@ -76,11 +76,11 @@ $sth_cnv->execute();
 my %samples = ();
 my %genes = ();
 my %cnts = ();
-while (my ($sample_name,$gene,$cnt) = $sth_cnv->fetchrow_array) {
+while (my ($sample_id,$gene,$cnt) = $sth_cnv->fetchrow_array) {
   if ($gene) {
-    $samples{$sample_name} = '';
+    $samples{$sample_id} = '';
     $genes{$gene} = '';
-    $cnts{$sample_name}{$gene} = $cnt;
+    $cnts{$sample_id}{$gene} = $cnt;
   }
 }
 $sth_cnv->finish;

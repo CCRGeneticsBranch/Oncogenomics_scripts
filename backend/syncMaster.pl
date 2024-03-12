@@ -364,6 +364,7 @@ for (my $file_idx=0; $file_idx<=$#input_files; $file_idx++) {
 		$diag =~ s/^\s+|\s+$//g;
 		$diag =~ s/'//g;
 		$diag =~ s/"//g;
+		$diag =~ s/\//_/g;
 		#if ($diag eq "Ewings sarcoma" || $diag eq "Ewings like sarcoma") {
 		#	$diag = "Ewing sarcoma";
 		#}

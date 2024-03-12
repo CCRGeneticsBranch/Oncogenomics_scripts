@@ -31,7 +31,6 @@ script_lib_home=`realpath ${script_home}/../lib`
 db_name=$target_db
 url=`grep '^URL=' ${home}/.env | sed 's/URL=//'`
 
-
 project_file=$sync_home/project_mapping.txt
 echo [`date +"%Y-%m-%d %H:%M:%S"`] "project_file = $project_file, target_type=$target_type, target_db=$target_db";
 while IFS=$'\t' read -r -a cols
@@ -95,7 +94,7 @@ do
 							perl ${script_home}/deleteCase.pl -p ${pat_id} -c ${case_id} -t ${project} -r >> ${log_file}
 							echo [`date +"%Y-%m-%d %H:%M:%S"`] "syncing ${source_path}${folder} ${project_home}/${pat_id}" >> ${log_file}
 							#rsync -tirm --include '*/' --include "*.txt" --exclude "dag*.png" --exclude "fusions.discarded.tsv" --include '*.SJ.out.tab' --include '*.SJ.out.bed.gz' --include '*.SJ.out.bed.gz.tbi' --include '*.star.final.bam.tdf' --include '*.tsv'  --include '*.vcf' --include "*.png" --include '*.pdf' --include "*.gt" --include "*.bwa.loh" --include "*hotspot.depth" --include "*.tmb" --include "*.status" --include "*selfSM" --include 'db/*' --include "*tracking" --include "qc/rnaseqc/*" --include "RSEM*/*" --include 'HLA/*' --include 'NeoAntigen/*' --include 'HLA/*' --include 'MHC_Class_I/*' --include 'sequenza/*' --include 'cnvkit/*' --include 'cnvTSO/*' --include '*fastqc/*' --exclude "TPM_*/" --exclude "log/" --exclude "igv/" --exclude "topha*/" --exclude "fusion/*" --exclude "calls/" --exclude '*' ${source_path}${folder} ${project_home}/${pat_id} 2>&1
-							rsync -e 'ssh -q' -tirm --include '*/' --include "*.txt" --include "*.html" --exclude "fusions.discarded.tsv" --include '*.SJ.out.tab' --include '*.SJ.out.bed.gz' --include '*.SJ.out.bed.gz.tbi' --include '*.star.final.bam.tdf' --include '*.tsv'  --include '*.vcf' --include "*.png" --include '*.pdf' --include "*.gt" --include "*.bwa.loh" --include "*hotspot.depth" --include "*.tmb" --include "*.status" --include "*selfSM" --include 'db/*' --include "*tracking" --include "*exonExpression*" --include "TPM_ENS/*" --include "qc/rnaseqc/*" --include "TPM_UCSC/*" --include "RSEM*/*" --include 'HLA/*' --include 'NeoAntigen/*' --include 'HLA/*' --include 'MHC_Class_I/*' --include 'sequenza/*' --include 'cnvkit/*' --include 'cnvTSO/*' --include '*fastqc/*' --include '*multiqc_data/*' --exclude "TPM_*/" --exclude "log/" --exclude "igv/" --exclude "topha*/" --exclude "fusion/*" --exclude "calls/" --exclude '*' ${source_path}${folder} ${project_home}/${pat_id} >> ${log_file}
+							rsync -e 'ssh -q' -tirm --include '*/' --include "*.txt" --include "*.html" --exclude "dag*.png" --exclude "fusions.discarded.tsv" --include '*.SJ.out.tab' --include '*.SJ.out.bed.gz' --include '*.SJ.out.bed.gz.tbi' --include '*.star.final.bam.tdf' --include '*.tsv'  --include '*.vcf' --include "*.png" --include '*.pdf' --include "*.gt" --include "*.bwa.loh" --include "*hotspot.depth" --include "*.tmb" --include "*.status" --include "*selfSM" --include 'db/*' --include "*tracking" --include "*exonExpression*" --include "TPM_ENS/*" --include "qc/rnaseqc/*" --include "TPM_UCSC/*" --include "RSEM*/*" --include 'HLA/*' --include 'NeoAntigen/*' --include 'HLA/*' --include 'MHC_Class_I/*' --include 'sequenza/*' --include 'cnvkit/*' --include 'cnvTSO/*' --include '*fastqc/*' --include '*multiqc_data/*' --exclude "TPM_*/" --exclude "log/" --exclude "igv/" --exclude "topha*/" --exclude "fusion/*" --exclude "calls/" --exclude '*' ${source_path}${folder} ${project_home}/${pat_id} >> ${log_file}
 							chmod -R -f 770 ${project_home}/${pat_id}/${case_id}
 							chgrp -R -f ncif-www-onc-grp ${project_home}/${pat_id}/${case_id}
 						fi
@@ -126,7 +125,7 @@ do
 					if [ "$target_type" == "db" ] 
 					then
 						echo [`date +"%Y-%m-%d %H:%M:%S"`] "${script_home}/uploadCase.pl -i ${project_home} -o $project_desc $folder-l ${update_list} -d ${db_name} -u ${url}" >> ${log_file}
-						LC_ALL="en_US.utf8" perl ${script_home}/uploadCase.pl -i ${project_home} -o $project_desc -l ${update_list} -d ${db_name} -u ${url} 2>&1 1>>${log_file}
+						LC_ALL="en_US.utf8" perl ${script_home}/uploadCase.pl -i ${project_home} -o $project_desc -l ${update_list} -d ${db_name} -u ${url} 2>&1 1>>${log_file}						
 						if [ "$project" != "compass_tso500" ]
 						then
 							LC_ALL="en_US.utf8" perl ${script_home}/updateVarCases.pl
@@ -153,7 +152,7 @@ do
 					fi
 			fi		
 		fi
-		find $sync_home -size 0c -delete
+		#find $case_list_home -size 0c -delete
 		#chmod -f -R 775 ${project_home}
 			
 	fi
@@ -162,10 +161,12 @@ do
 done < $project_file
 
 if [ "$target_type" == "db" ];then
-	echo [`date +"%Y-%m-%d %H:%M:%S"`] "refreshing views -c -p -h" >> ${log_file}
-	LC_ALL="en_US.utf8" ${script_home}/refreshViews.pl -c -p -h >> ${log_file}
-	LC_ALL="en_US.utf8" ${script_home}/updateVarCases.pl >> ${log_file}
-	LC_ALL="en_US.utf8" ${script_home}/export_new_variants.pl -o  ${home}/avia/hg19/new_variants.tsv >> ${log_file}
+	echo [`date +"%Y-%m-%d %H:%M:%S"`] "exporting new variants" >> ${log_file}
+	LC_ALL="en_US.utf8" ${script_home}/export_new_variants.pl -o  ${home}/avia/hg19/new_variants.tsv >> ${log_file}	
+	echo [`date +"%Y-%m-%d %H:%M:%S"`] "refreshing views -c" >> ${log_file}
+	LC_ALL="en_US.utf8" ${script_home}/refreshViews.pl -c -h >> ${log_file}
+	echo [`date +"%Y-%m-%d %H:%M:%S"`] "updateing case name/ID" >> ${log_file}
+	LC_ALL="en_US.utf8" ${script_home}/updateVarCases.pl >> ${log_file}	
 fi
 if [ "$target_type" == "bam" ];then
 	LC_ALL="en_US.utf8" ${script_home}/checkProcessedResults.pl >> ${log_file}

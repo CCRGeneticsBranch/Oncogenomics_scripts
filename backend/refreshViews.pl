@@ -10,6 +10,7 @@ my $refresh_all = 0;
 my $do_cnv = 0;
 my $do_prj_summary = 0;
 my $do_avia = 0;
+my $do_avia_full = 0;
 my $do_cohort = 0;
 my $show_sql = 0;
 
@@ -25,6 +26,7 @@ Options:
   -c            Refresh CNV views
   -p            Refresh Project views
   -v            Refresh AVIA views
+  -f            Refresh Full AVIA views
   -h            Refresh Cohort views
   -s            Show SQL statement
   
@@ -37,6 +39,7 @@ GetOptions (
   'c' => \$do_cnv,
   'p' => \$do_prj_summary,
   'v' => \$do_avia,
+  'f' => \$do_avia_full,
   'h' => \$do_cohort,
   's' => \$show_sql
 );
@@ -231,7 +234,34 @@ my $VAR_TOP20 = <<'END';
 select * from (select gene, count(distinct patient_id) as patient_count, 'germline' as type from var_genes where type='germline' group by gene order by patient_count desc ) where rownum <= 20 union
 select * from (select gene, count(distinct patient_id) as patient_count, 'somatic' as type from var_genes where type='somatic' group by gene order by patient_count desc ) where rownum <= 20;
 END
+my $VAR_SAMPLES_TMP = <<'END';
+select v.*,c.genome_version from cases c, var_samples v left join var_sample_avia_oc a on(
+v.patient_id=a.patient_id and v.case_id=a.case_id and v.sample_id=a.sample_id and v.type=a.type and v.chromosome=a.chromosome and v.start_pos=a.start_pos and v.end_pos=a.end_pos and v.ref=a.ref and v.alt=a.alt )
+where v.patient_id=c.patient_id and v.case_id=c.case_id and a.patient_id is null
+END
 my $VAR_SAMPLE_AVIA_OC_HG19 = <<'END';
+select v.*,a.* 
+from var_samples_tmp v, hg19_annot_oc a
+where
+v.genome_version='hg19' and
+v.chromosome = a.chr and 
+v.start_pos=query_start and 
+v.end_pos=query_end and 
+v.ref=allele1 and 
+v.alt=allele2
+END
+my $VAR_SAMPLE_AVIA_OC_HG38 = <<'END';
+select v.*,a.* 
+from var_samples_tmp v, hg38_annot_oc a
+where
+v.genome_version='hg38' and
+v.chromosome = a.chr and 
+v.start_pos=query_start and 
+v.end_pos=query_end and 
+v.ref=allele1 and 
+v.alt=allele2
+END
+my $VAR_SAMPLE_AVIA_OC_HG19_FULL = <<'END';
 select v.*,c.genome_version,a.* 
 from var_samples v, hg19_annot_oc a, cases c
 where
@@ -244,7 +274,7 @@ v.end_pos=query_end and
 v.ref=allele1 and 
 v.alt=allele2
 END
-my $VAR_SAMPLE_AVIA_OC_HG38 = <<'END';
+my $VAR_SAMPLE_AVIA_OC_HG38_FULL = <<'END';
 select v.*,c.genome_version,a.* 
 from var_samples v, hg38_annot_oc a, cases c
 where
@@ -270,11 +300,12 @@ my %VAR_GENES_INDEXES = ( "VAR_GENES_GENE" => "GENE" );
 my %VAR_SAMPLE_AVIA_OC_INDEXES = ( "VAR_SAMLE_AVIA_OC_COORD" => "CHROMOSOME, START_POS, END_POS, REF, ALT",
 "VAR_SAMPLE_AVIA_OC_GENE" => "TYPE, GENE,CANONICALPROTPOS",
 "VAR_SAMPLE_AVIA_OC_PATIENT" =>  "TYPE, PATIENT_ID, CASE_ID, SAMPLE_ID",
+"VAR_SAMPLE_AVIA_OC_PK" =>  "TYPE, PATIENT_ID, CASE_ID, SAMPLE_ID, CHROMOSOME, START_POS, END_POS, REF, ALT",
 "VAR_SAMPLE_AVIA_OC_SAMPLE" => "SAMPLE_ID" );
 
 #print "$CASES\n$FUSION_COUNT\n$PROCESSED_SAMPLE_CASES\n";
 
-if (!$refresh_all && !$do_cnv && !$do_prj_summary && !$do_avia && !$do_cohort) {
+if (!$refresh_all && !$do_cnv && !$do_prj_summary && !$do_avia && !$do_avia_full && !$do_cohort) {
     die "Please specifiy options!\n$usage";
 }
 
@@ -302,8 +333,15 @@ if ($refresh_all || $do_prj_summary) {
 
 if ($refresh_all || $do_avia) {
 	print_log("Refrshing AVIA view...");
-	do_create('VAR_SAMPLE_AVIA_OC', $VAR_SAMPLE_AVIA_OC_HG19);
-	do_insert('VAR_SAMPLE_AVIA_OC', $VAR_SAMPLE_AVIA_OC_HG38, 0, \%VAR_SAMPLE_AVIA_OC_INDEXES);
+	do_insert('VAR_SAMPLES_TMP', $VAR_SAMPLES_TMP,1);
+	do_insert('VAR_SAMPLE_AVIA_OC', $VAR_SAMPLE_AVIA_OC_HG19);
+	do_insert('VAR_SAMPLE_AVIA_OC', $VAR_SAMPLE_AVIA_OC_HG38);
+}
+
+if ($do_avia_full) {
+	print_log("Refrshing AVIA view...");
+	do_create('VAR_SAMPLE_AVIA_OC', $VAR_SAMPLE_AVIA_OC_HG19_FULL);
+	do_insert('VAR_SAMPLE_AVIA_OC', $VAR_SAMPLE_AVIA_OC_HG38_FULL, 0, \%VAR_SAMPLE_AVIA_OC_INDEXES);
 }
 
 if ($refresh_all || $do_cnv) {
