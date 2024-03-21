@@ -2,11 +2,11 @@
 
 project_name=$1
 email=$2
-url=https://fsabcl-onc01d.ncifcrf.gov/clinomics_public/public
-root_dir=/mnt/projects/CCR-JK-oncogenomics/static/clones
-pro_dir=$root_dir/clinomics
-pub_dir=$root_dir/clinomics_public
-sync_dir=$root_dir/clinomics_public/storage/update_list
+url=`grep ^URL= ../../../.env | sed 's/URL=//'`
+root_dir=/mnt/projects/CCR-JK-oncogenomics/static/site_data
+pro_dir=$root_dir/prod
+pub_dir=$root_dir/pub
+sync_dir=$pub_dir/storage/sync
 suffix=`date +"%Y%m%d-%H%M%S"`
 
 echo "==== step 1: sync master file ===="

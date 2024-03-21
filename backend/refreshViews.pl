@@ -235,7 +235,7 @@ select * from (select gene, count(distinct patient_id) as patient_count, 'germli
 select * from (select gene, count(distinct patient_id) as patient_count, 'somatic' as type from var_genes where type='somatic' group by gene order by patient_count desc ) where rownum <= 20;
 END
 my $VAR_SAMPLES_TMP = <<'END';
-select v.*,c.genome_version from cases c, var_samples v left join var_sample_avia_oc a on(
+select v.*,c.genome_version from processed_cases c, var_samples v left join var_sample_avia_oc a on(
 v.patient_id=a.patient_id and v.case_id=a.case_id and v.sample_id=a.sample_id and v.type=a.type and v.chromosome=a.chromosome and v.start_pos=a.start_pos and v.end_pos=a.end_pos and v.ref=a.ref and v.alt=a.alt )
 where v.patient_id=c.patient_id and v.case_id=c.case_id and a.patient_id is null
 END
@@ -263,7 +263,7 @@ v.alt=allele2
 END
 my $VAR_SAMPLE_AVIA_OC_HG19_FULL = <<'END';
 select v.*,c.genome_version,a.* 
-from var_samples v, hg19_annot_oc a, cases c
+from var_samples v, hg19_annot_oc a, processed_cases c
 where
 v.patient_id=c.patient_id and
 v.case_id=c.case_id and
@@ -276,7 +276,7 @@ v.alt=allele2
 END
 my $VAR_SAMPLE_AVIA_OC_HG38_FULL = <<'END';
 select v.*,c.genome_version,a.* 
-from var_samples v, hg38_annot_oc a, cases c
+from var_samples v, hg38_annot_oc a, processed_cases c
 where
 v.patient_id=c.patient_id and
 v.case_id=c.case_id and

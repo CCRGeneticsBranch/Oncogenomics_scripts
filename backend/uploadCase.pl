@@ -118,8 +118,6 @@ my $var_annotation_tbl = "var_annotation";
 my $var_annotation_col_tbl = "var_annotation_col";
 my $var_annotation_dtl_tbl = "var_annotation_details";
 #my $sth_ano_exists = $dbh->prepare("select count(*) from $var_annotation_tbl where chromosome = ? and start_pos = ? and end_pos = ? and ref = ? and alt = ?");
-my $sth_exp_exists = $dbh->prepare("select count(*) from sample_values where sample_id=? and target_type=? and target_level=? and rownum=1");
-my $sth_exp_exon_exists = $dbh->prepare("select count(*) from exon_expression where sample_id=? and target_type=? and rownum=1");
 my $sth_diag = $dbh->prepare("select diagnosis from patients where patient_id=?");
 my $sth_emails = $dbh->prepare("select email_address from users where permissions like '%_superadmin%'");
 my $sth_fu = $dbh->prepare("insert into /*+ APPEND */ var_fusion values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
@@ -836,27 +834,7 @@ foreach my $patient_dir (@patient_dirs) {
 			system($exp_cmd);
 		}
 		#next if ($load_type ne "exp" || $refresh_exp);		
-		if ($load_type eq "exp" || $refresh_exp) {
-			my @exp_dirs = grep { -d } glob $case_dir."*";
-			my $inserted = 0;
-			foreach my $d (@exp_dirs) {
-				$d = &formatDir($d);
-				my $folder_name = basename($d);
-				my $sample_id = $folder_name;
-				$sample_id =~ s/Sample_//;
-				try {
-					my $ret = &insertExp($dir, $folder_name, $patient_id, $case_id, $sample_id);
-					if ($ret) {
-						$inserted = 1;
-					}
-				} catch {
-					push(@errors, "$patient_id\t$case_id\tExpression\t$_");
-				};				
-			}
-			if ($inserted) {
-				$new_data{$patient_key}{'expression'} = '';
-			}
-		}
+		
 		my $duration = time - $start;
 		print_log("done $patient_id/$case_id");
 		#print "Patient $patient_id upload time: $duration seconds\n";
@@ -1481,223 +1459,6 @@ sub insertSplice {
 	}
 	$dbh->commit();
 	return 1;
-}
-
-sub insertExp {
-	my ($dir, $folder_name, $patient_id, $case_id) = @_;
-	my %target_types = ("ENS" => "ensembl", "UCSC" => "refseq");
-	my %target_levels = ("gene" => "gene", "transcript" => "trans");
-
-	my $sample_id = $folder_name;
-	$sample_id =~ s/Sample_//;
-	if (exists $sample_alias{$sample_id}) {
-		$sample_id = $sample_alias{$sample_id};
-	}
-	my $exp_type = $sample_exp_type{$sample_id};
-	if (!$exp_type) {
-		return 0;
-	}
-	if (lc($exp_type) ne "rnaseq"){
-		return 0;
-	}
-	
-	my $case_type = "exp";
-	my $res = 0;
-	while (my ($type, $target_type) = each %target_types) {
-		my $path = $patient_id."/$case_id/$folder_name";		
-		while (my ($level, $target_level) = each %target_levels) {
-			my $tpm_file = "$path/TPM_$type/$folder_name.$level.TPM.txt";
-			#my $count_file = "$path/TPM_$type/$folder_name"."_counts.$level.txt";
-			my $exp_file = "$path/TPM_$type/exp.$level.tsv";
-			if ( -s $tpm_file ) {
-				print_log("processing expression file: $tpm_file");
-				#if ( -s $count_file && -s $fpkm_file) {
-				if ($refresh_exp || !checkExpressionExists($sample_id, $target_type, $target_level)) {
-					if (!exists $cases{$case_id.$patient_id.$case_type}) {						
-						my $sql = "insert into var_type values('$case_id', '$patient_id', '$case_type', 'active','',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)";
-						$cases{$case_id.$patient_id.$case_type} = '';
-						$dbh->do($sql);		
-						$dbh->commit();
-					}
-					if ($refresh_exp || !-e $exp_file) {						
-						#open COUNT_FILE, $count_file;
-						if ($refresh_exp) {
-							$dbh->do("delete sample_values where sample_id = '$sample_id' and target_type = '$target_type' and target_level = '$target_level'");
-							$dbh->commit();
-						}
-
-						open TPM_FILE, $tpm_file;
-						open(EXP_FILE, ">$exp_file") or die "Cannot open file $exp_file";
-						#my %count_data = ();
-						#while (<COUNT_FILE>) {
-						#	chomp;
-						#	my @fields = split(/\t/);
-						#	my $target = $fields[3];
-						#	my $value = $fields[5];
-						#	$count_data{$target} = $value;
-						#}
-						#close(COUNT_FILE);					
-						<TPM_FILE>;
-						my $counter = 0;
-						while (<TPM_FILE>) {
-							chomp;
-							my @fields = split(/\t/);
-							my $target = $fields[3];
-							my $tpm = $fields[4];
-							if ($target_level eq "trans") {
-								$target = $fields[4];
-								$tpm = $fields[5];
-							}
-							
-							#my $count = $count_data{$target};
-							my $gene = $gene_mapping{$target};
-							my $symbol = $symbol_mapping{$target};
-
-							if ($gene && $symbol) {
-								print EXP_FILE join("\t",$sample_id, $target, $gene, $symbol, $target_type, $target_level, $tpm)."\n";
-							}
-
-							#$sth_exp->execute($sample_id, $target, $gene, $symbol, $target_type, $target_level, $fpkm, $count);
-							#$counter++;
-							#if ($counter % 5000 == 0) {
-							#	$dbh->commit();
-							#	$counter = 0;
-							#}
-						}
-						close(TPM_FILE);
-						close(EXP_FILE);
-						#$dbh->commit();
-					}
-					my $ret = &callSqlldr($exp_file, $script_dir."/ctrl_files/exp.ctrl");
-					if ($ret ne "ok") {
-						push(@errors, "$patient_id\t$case_id\tExp\tSQLLoader-$exp_file");						
-					} else {
-						$res = 1;
-					}
-				}
-			}
-		}
-		my $tpm_file = "$path/TPM_$type/$folder_name.exon.TPM.txt";
-		if (-e $tpm_file) {
-			#my $count_file = "$path/TPM_$type/$folder_name"."_counts.Exon.txt";
-			my $exon_exp_file = "$path/TPM_$type/exp.exon.tsv";
-			if ($refresh_exp || !checkExpressionExists($sample_id, $target_type, "exon")) {
-				&loadExonExp($patient_id, $case_id, $tpm_file, $exon_exp_file, $target_type, $sample_id);
-			}
-		}
-	}
-	return $res;				
-}
-
-sub loadExonExp {
-	my ($patient_id, $case_id, $tpm_file, $exp_file, $target_type, $sample_id) = @_;
-
-	print_log("processing expression file: $tpm_file");
-	if ( -s $tpm_file) {
-		if ($refresh_exp || !-e $exp_file) {
-			#open COUNT_FILE, $count_file;
-			if ($refresh_exp) {
-				$dbh->do("delete exon_expression where sample_id = '$sample_id' and target_type = '$target_type'");
-				$dbh->commit();
-			}
-
-			open TPM_FILE, $tpm_file;
-			open(EXP_FILE, ">$exp_file") or die "Cannot open file $exp_file";
-		
-			#my %count_data = ();
-			my %tpm_data = ();
-
-			#while (<COUNT_FILE>) {
-			#	chomp;
-			#	my @fields = split(/\t/);
-			#	my $target = join("\t", $fields[0], $fields[1], $fields[2]);			
-			#	$count_data{$target} = $fields[5];
-			#}
-
-			#close(COUNT_FILE);
-			
-			<TPM_FILE>;
-			#my $counter = 0;
-			while (<TPM_FILE>) {
-				chomp;
-				my @fields = split(/\t/);		
-				my $target = join("\t", $fields[0], $fields[1], $fields[2]);
-				if (exists($tpm_data{$target})) {
-					next;
-				}
-				my $chr = "chr".$fields[0];
-				my $start_pos = $fields[1];
-				my $end_pos = $fields[2];
-				my $trans = $fields[4];
-				my $tpm = $fields[6];
-
-				#my $trans = "";
-				#if ($id =~ /(.*)\..*/) {
-				#	$trans = $1;
-				#}
-				my $symbol = $symbol_mapping{$trans};
-				if (!$symbol) {
-					$symbol = "";
-				}
-
-				#my $count = $count_data{$target};
-				#if (!$count) {
-				#	next;
-				#}
-
-				if ($tpm == 0) {
-					next;
-				}
-
-				print EXP_FILE join("\t",$sample_id, $chr, $start_pos, $end_pos, $symbol, $target_type, $tpm)."\n";
-				#$sth_exon_exp->execute($sample_id, $chr, $start_pos, $end_pos, $symbol, $target_type, $fpkm, $count);
-				#$counter++;
-				#if ($counter % 5000 == 0) {
-				#	$dbh->commit();
-				#	$counter = 0;
-				#}
-				$tpm_data{$target} = '';
-			}
-			close(TPM_FILE);
-			close(EXP_FILE);
-		}
-		my $ret = &callSqlldr($exp_file, $script_dir."/ctrl_files/exp_exon.ctrl");
-		if ($ret ne "ok") {
-			push(@errors, "$patient_id\t$case_id\tExp-Exon\tSQLLoader-$exp_file");						
-		}
-		#$dbh->commit();
-	}	
-	return 1;
-}
-
-sub loadCufflinks {
-	my ($file, $level, $type, $sample_id) = @_;
-	open (INFILE, "$file") or return;
-	my $line = <INFILE>;
-	chomp $line;
-	my @header_list = split(/\t/, $line);
-	my %headers = ();
-	for (my $i=0;$i<=$#header_list;$i++) {
-		$headers{$header_list[$i]} = $i;		
-	}
-	my $counter = 0;
-	while(<INFILE>) {
-		chomp;
-		my @fields = split(/\t/);
-		my $target = $fields[$headers{'tracking_id'}];
-		my $symbol = $fields[$headers{'gene_short_name'}];
-		my $gene = $fields[$headers{'gene_id'}];
-		my $fpkm = $fields[$headers{'FPKM'}];
-		#if ($fpkm ne "0") {
-			$sth_exp->execute($sample_id, $target, $gene, $symbol, $type, $level, $fpkm);
-			$counter++;
-			if ($counter % 5000 == 0) {
-				$dbh->commit();
-				$counter = 0;
-			}
-		#}
-	}
-	$dbh->commit();
 }
 
 sub insertNewFusion {
@@ -2325,23 +2086,6 @@ sub getDiagnosis {
 	}
 	$sth_diag->finish;
 	return $diagnosis;
-}
-
-sub checkExpressionExists {
-	my ($sample_id, $target_type, $target_level) = @_;
-	my @row;
-	if ($target_level ne "exon") {
-		$sth_exp_exists->execute($sample_id, $target_type, $target_level);
-		@row = $sth_exp_exists->fetchrow_array;
-		$sth_exp_exists->finish;
-	} else {
-		$sth_exp_exon_exists->execute($sample_id, $target_type);
-		@row = $sth_exp_exon_exists->fetchrow_array;
-		$sth_exp_exon_exists->finish;
-	}
-	my $exists = ($row[0] > 0);	
-	return $exists;
-
 }
 
 sub getWithStatus {
