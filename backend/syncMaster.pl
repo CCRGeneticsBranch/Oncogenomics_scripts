@@ -791,7 +791,6 @@ if ($#errors == -1) {
 		if ($?||$@){
 			&sendEmail("Could not successfully run updateVarCases.pl after successfully uploading to the database $modified_file_list\nNote:  You will need to refresh MV PROCESSED_SAMPLE_CASES after rerunning if you run this out of $0\n",'','vuonghm@mail.nih.gov');
 		}
-		$dbh->do("BEGIN Dbms_Mview.Refresh('PROCESSED_SAMPLE_CASES','C');END;");
 	}
 }
 else {

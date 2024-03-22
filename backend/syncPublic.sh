@@ -36,7 +36,7 @@ done < $sync_dir/project_cases/project_cases_$suffix.tsv
 
 echo "==== step 4: sync and upload data ===="
 echo "command: $pub_dir/app/scripts/backend/syncProcessedResults.sh all db pub"
-$pub_dir/app/scripts/backend/syncProcessedResults.sh all db pub
+$pub_dir/app/scripts/backend/syncProcessedResults.sh all db production
 
 if [ ! -z $email ];then
 	echo "==== step 5: send notification email ===="

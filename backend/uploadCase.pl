@@ -1531,8 +1531,6 @@ sub insertQC {
 			$headers{$header_list[$i]} = $i;
 		}
 	
-
-
 	while (<INFILE>) {
 		chomp;
 		my @fields = split(/\t/);
@@ -1544,7 +1542,7 @@ sub insertQC {
 			$sample_id = $sample_alias{$sample_id};			
 		}
 
-		next if ($fields[0] =~ /patient/i);
+		#next if ($fields[0] =~ /patient/i);
 		for (my $i=2;$i<=$#fields;$i++) {
 			if($type ne "rnaV2"){
 				my $attr_name = $header_list[$i];
