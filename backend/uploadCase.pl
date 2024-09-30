@@ -142,8 +142,8 @@ my $sth_cnv = $dbh->prepare("insert into var_cnv values(?,?,?,?,?,?,?,?,?,?)");
 my $sth_cnv_segment = $dbh->prepare("insert into var_cnv_segment values(?,?,?,?,?,?,?,?,?,?,?)");
 my $sth_cnv_gene = $dbh->prepare("insert into var_cnv_gene_level values(?,?,?,?,?,?,?,?,?,?)");
 my $sth_cnvkit = $dbh->prepare("insert into var_cnvkit values(?,?,?,?,?,?,?,?,?,?)");
-my $sth_cnvkit_segment = $dbh->prepare("insert into var_cnvkit_segment values(?,?,?,?,?,?,?,?,?,?,?)");
-my $sth_cnvkit_gene = $dbh->prepare("insert into var_cnvkit_gene_level values(?,?,?,?,?,?,?,?,?,?,?)");
+my $sth_cnvkit_segment = $dbh->prepare("insert into var_cnvkit_segment values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+my $sth_cnvkit_gene = $dbh->prepare("insert into var_cnvkit_gene_level values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 my $sth_cnvtso = $dbh->prepare("insert into var_cnvtso values(?,?,?,?,?,?,?,?,?)");
 my $sth_tcell_extrect = $dbh->prepare("insert into tcell_extrect values(?,?,?,?,?,?,?)");
 my $sth_mutation_burden = $dbh->prepare("insert into mutation_burden values(?,?,?,?,?,?)");
@@ -698,7 +698,7 @@ foreach my $patient_dir (@patient_dirs) {
 		}
 
 		#process CNV gene level
-		if ($load_type eq "all" || $load_type eq "cnvkit") {
+		if ($load_type eq "all" || $load_type eq "cnv" || $load_type eq "cnvkit") {
 			my @sample_dirs = grep { -d } glob $case_dir."*";
 			my $inserted = 0;
 			foreach my $d (@sample_dirs) {
@@ -1241,12 +1241,15 @@ sub insertCNV {
 sub insertCNVKit {
 	my ($dir, $folder_name, $patient_id, $case_id) = @_;	
 	my $cnv_dir = $dir.$patient_id."/$case_id/$folder_name/cnvkit";
-	my $filename = "$cnv_dir/$folder_name".".cns";
+	my $filename = "$cnv_dir/$folder_name".".call.cns";
 	my $ratio_filename = "$cnv_dir/$folder_name".".cnr";
 	my $gene_segment_filename = "$cnv_dir/$folder_name".".segments.genes.bed";
+	my $segment_file_type = 1;
 	#print $filename."\n";
 	if (!-e $filename) {
-		return 0;
+		$filename = "$cnv_dir/$folder_name".".cns"; 
+		$segment_file_type = 2;
+		return 0 if (!-e $filename);
 	}
 	my $sample_id = $folder_name;
 	$sample_id =~ s/Sample_//;
@@ -1275,7 +1278,7 @@ sub insertCNVKit {
 	}
 	$dbh->commit();
 	system("$script_dir/run_reconCNV.sh $ratio_filename");
-	system("$script_dir/gen_cnvkit_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed");
+	system("$script_dir/gen_cnvkit_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed $segment_file_type");
 	if ( -e $gene_segment_filename) {
 		open (GENE_SEG_FILE, "$gene_segment_filename");
 		print_log("processing CNVKit gene segments: $gene_segment_filename");
@@ -1284,7 +1287,11 @@ sub insertCNVKit {
 			chomp;
 			my @fields = split(/\t/);
 			next if ($#fields == 0);
-			$sth_cnvkit_segment->execute($patient_id, $case_id, $sample_id, $fields[0], $fields[1], $fields[2], $fields[3], $fields[4], $fields[5], $fields[6], $fields[7]);
+			if ($#fields == 13) {
+				$sth_cnvkit_segment->execute($patient_id, $case_id, $sample_id, $fields[0], $fields[1], $fields[2], $fields[3], $fields[4], $fields[5], $fields[6], $fields[7], $fields[8], $fields[9], $fields[10], $fields[11], $fields[12], $fields[13]);
+			} else {
+				$sth_cnvkit_segment->execute($patient_id, $case_id, $sample_id, $fields[0], $fields[1], $fields[2], $fields[3], NULL, NULL, NULL, NULL, NULL, NULL, $fields[4], $fields[5], $fields[6], $fields[7]);
+			}
 		}
 		close(GENE_SEG_FILE);
 		$dbh->commit();
@@ -1316,16 +1323,28 @@ sub insertCNVKitGene {
 		chomp;
 		my @fields = split(/\t/);
 		next if ($#fields != $#header_list);
-		my $gene = $fields[0];
-		my $chr = $fields[1];
-		$chr =~ s/\"//g;
-		my $start_pos = $fields[2];
-		my $end_pos = $fields[3];
-		my $log2 = $fields[4];		
-		my $depth = $fields[5];
-		my $weight = $fields[6];
-		my $probes = $fields[7];
-		$sth_cnvkit_gene->execute($patient_id, $case_id, $sample_id, $chr, $start_pos, $end_pos, $log2, $depth, $probes, $weight,$gene);		
+		if ($#header_list == 6) {
+			my $chr = $fields[0];
+			my $start_pos = $fields[1];
+			my $end_pos = $fields[2];
+			my $gene = $fields[3];
+			my $cn = $fields[4];
+			my $cn1 = $fields[5];
+			my $cn2 = $fields[6];
+			$sth_cnvkit_gene->execute($patient_id, $case_id, $sample_id, $chr, $start_pos, $end_pos, 0, 0, 0, 0,$gene, $cn, $cn1, $cn2);
+		}
+		if ($#header_list == 7) {		
+			my $gene = $fields[0];
+			my $chr = $fields[1];
+			$chr =~ s/\"//g;
+			my $start_pos = $fields[2];
+			my $end_pos = $fields[3];
+			my $log2 = $fields[4];		
+			my $depth = $fields[5];
+			my $weight = $fields[6];
+			my $probes = $fields[7];
+			$sth_cnvkit_gene->execute($patient_id, $case_id, $sample_id, $chr, $start_pos, $end_pos, $log2, $depth, $probes, $weight,$gene,0,0,0);		
+		}
 	}
 	$dbh->commit();
 	#system("$script_dir/run_reconCNV.sh $ratio_filename");
@@ -1614,7 +1633,7 @@ sub insertTier {
 		open(TIER_FILE_AVIA, ">>$tier_avia_file") or die "Cannot open file $tier_avia_file";
 	}
 	my $curl = "$url/getVarTier/$patient_id/$case_id/$type/$sample_id/avia";
-	#print "$curl\n";#hv
+	print "$curl\n";#hv
 	my @lines = readpipe("php $script_dir/httpClient.php url=$curl");
 	
 	#my( $status, $results ) = getWithStatus( $curl );

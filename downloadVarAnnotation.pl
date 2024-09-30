@@ -12,7 +12,8 @@ require(dirname(abs_path($0))."/lib/Onco.pm");
 
 my $project_id;
 my $email = "";
-my $url = getConfig("url");
+my $url = getConfig("URL");
+my $token = getConfig("TOKEN");
 my $project_name = "";
 my $include_pub=0;
 
@@ -78,7 +79,9 @@ foreach my $pid (keys %data) {
 	for my $r(@rows) {
 		my @row = @{$r};
 		print join("\t", @row)."\n";
-		my $cmd = "curl -F project_id=$row[0] -F type=$row[3] -F annotation=avia -F patient_id=$row[1] -F case_id=$row[2] -F stdout=true -F include_details=true -F high_conf_only=$high_conf $url/downloadVariants > $var_dir/$row[1].$row[2].$row[3].tsv";
+		#my $cmd = "curl -F project_id=$row[0] -F type=$row[3] -F annotation=avia -F patient_id=$row[1] -F case_id=$row[2] -F stdout=true -F include_details=true -F high_conf_only=$high_conf $url/downloadVariants > $var_dir/$row[1].$row[2].$row[3].tsv";
+		my $cmd = "curl $url/downloadVariantsGet/$token/$row[0]/$row[1]/$row[2]/$row[3] > $var_dir/$row[1].$row[2].$row[3].tsv";
+		print("$cmd\n");
 		$types{$row[3]} = '';
 		system($cmd);
 	}

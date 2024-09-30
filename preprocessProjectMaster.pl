@@ -75,7 +75,7 @@ my $sid = getDBSID();
 
 my %projects = ();
 if ($project_id eq "all") {
-	my $sql = "select id, name, ispublic from projects";
+	my $sql = "select id, name, ispublic from projects where id <> 25062 order by id";
 	my $sth = $dbh->prepare($sql);
 	$sth->execute();
 	while (my ($id, $name, $ispublic) = $sth->fetchrow_array) {
@@ -112,7 +112,7 @@ if ($project_id eq "all") {
 
 $dbh->do("alter index PROJECT_VALUES_PK INVISIBLE");
 my $all_start = time;
-foreach my $pid (keys %projects) {
+foreach my $pid (sort keys %projects) {
 	print "Clean up old data...$sid";
 	my $start = time;
 	if (! $no_exp) {

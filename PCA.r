@@ -4,7 +4,7 @@ loading_file<-Args[7]
 coord_file<-Args[8]
 std_file<-Args[9]
 do_trans<-Args[10]
-data<-read.table(in_file, header=T, com='', sep="\t")
+data<-read.table(in_file, header=T, sep="\t", row.names=1)
 d<-data[,2:length(data)]
 mat<-as.matrix(d) # convert to matrix
 if (do_trans == 'T') {
