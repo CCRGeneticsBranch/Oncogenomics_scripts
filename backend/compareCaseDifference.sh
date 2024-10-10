@@ -25,7 +25,7 @@ do
 	succ_list_path=${cols[1]}
 	source_path=${cols[2]}
 	project_desc=${cols[3]}
-	today_list_path=`echo $succ_list_path | sed 's/new_list/today_list/'`
+	today_list_path=`echo $succ_list_path | sed 's/new_list/all_list/'`
 	echo "working on $project"
 	if [ "$target_project" == "$project" ] || [ "$target_project" == "all" ]
 	then

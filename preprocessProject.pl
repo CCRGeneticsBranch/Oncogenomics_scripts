@@ -53,11 +53,11 @@ if (!$project_id) {
 my $dbh = getDBI();
 my $sid = getDBSID();
 
-my $sql_insert_stat = "insert into /*+ APPEND */ PROJECT_STAT values(?,?,?,?,?,?,?,?)";
-my $sql_delete_project_value = "delete PROJECT_VALUES where project_id=? and target_type=? and target_level=? and value_type=?";
-my $sql_insert_project_value = "insert into /*+ APPEND */ PROJECT_VALUES values(?,?,?,?,?,?,?,?)";
-my $sql_delete_project_expression = "delete PROJECT_EXPRESSION where project_id=? and target_type=? and target_level=? and value_type=?";
-my $sql_insert_project_expression = "insert into /*+ APPEND */ PROJECT_EXPRESSION values(?,?,?,?,?)";
+my $sql_insert_stat = "insert into project_stat values(?,?,?,?,?,?,?,?)";
+my $sql_delete_project_value = "delete from project_values where project_id=? and target_type=? and target_level=? and value_type=?";
+my $sql_insert_project_value = "insert into project_values values(?,?,?,?,?,?,?,?)";
+my $sql_delete_project_expression = "delete from project_expression where project_id=? and target_type=? and target_level=? and value_type=?";
+my $sql_insert_project_expression = "insert into project_expression values(?,?,?,?,?)";
 
 my $sth_insert_stat = $dbh->prepare($sql_insert_stat);
 my $sth_delete_project_value = $dbh->prepare($sql_delete_project_value);

@@ -132,7 +132,7 @@ my $sth_splice = $dbh->prepare("insert into  /*+ APPEND */ var_splicing values (
 #my $sth_act = $dbh->prepare("insert into var_actionable_site values(?,?,?,?,?,?,?,?,?,?)");
 my $sth_qc = $dbh->prepare("insert into var_qc values(?,?,?,?,?,?)");
 my $sth_exp = $dbh->prepare("insert into /*+ APPEND */ sample_values values(?,?,?,?,?,?,?)");
-my $sth_tier = $dbh->prepare("insert into /*+ APPEND */ var_tier values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+#my $sth_tier = $dbh->prepare("insert into /*+ APPEND */ var_tier values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 my $sth_sample_cases = $dbh->prepare("update sample_cases set case_id=? where patient_id=? and case_id=?");
 my $sth_tier_avia = $dbh->prepare("insert into /*+ APPEND */ var_tier_avia values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 my $sth_var_qci = $dbh->prepare("insert /*+ APPEND */ into var_qci values(?,?,?,?,?,?,?,?,?)");
@@ -150,9 +150,8 @@ my $sth_mutation_burden = $dbh->prepare("insert into mutation_burden values(?,?,
 my $sth_mixcr_summary = $dbh->prepare("insert into mixcr_summary values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 my $sth_mixcr = $dbh->prepare("insert into mixcr values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 my $sth_neo_antigen = $dbh->prepare("insert into neo_antigen values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-my $stn_del_noncoding = $dbh->prepare("delete $var_sample_tbl v where patient_id=? and case_id=? and exists(select * from hg19_annot\@pub_lnk a where SUBSTR(v.chromosome,4) = a.chr and v.start_pos=a.query_start and v.end_pos=a.query_end and v.ref=a.allele1 and v.alt=a.allele2 and (maf > 0.05 or annovar_annot not in ('exonic','splicing','exonic;splicing')))");
-my $stn_rnaseqfp_khanlab = $dbh->prepare("delete var_tier t where type='rnaseq' and exists(select * from rnaseq_fp r where t.chromosome=r.chromosome and t.start_pos=r.start_pos and t.end_pos=r.end_pos and t.ref=r.ref and t.alt=r.alt)");
-my $stn_rnaseqfp_avia = $dbh->prepare("delete var_tier_avia t where type='rnaseq' and exists(select * from rnaseq_fp r where t.chromosome=r.chromosome and t.start_pos=r.start_pos and t.end_pos=r.end_pos and t.ref=r.ref and t.alt=r.alt)");
+my $stn_del_noncoding = $dbh->prepare("delete v from $var_sample_tbl v where patient_id=? and case_id=? and exists(select * from hg19_annot\@pub_lnk a where SUBSTR(v.chromosome,4) = a.chr and v.start_pos=a.query_start and v.end_pos=a.query_end and v.ref=a.allele1 and v.alt=a.allele2 and (maf > 0.05 or annovar_annot not in ('exonic','splicing','exonic;splicing')))");
+my $stn_rnaseqfp_avia = $dbh->prepare("delete t from var_tier_avia t where type='rnaseq' and exists(select * from rnaseq_fp r where t.chromosome=r.chromosome and t.start_pos=r.start_pos and t.end_pos=r.end_pos and t.ref=r.ref and t.alt=r.alt)");
 
 my $sth_update_smp_exp_cov = $dbh->prepare("update $var_sample_tbl v1 
 	set (matched_var_cov, matched_total_cov) = (select var_cov, total_cov from $var_sample_tbl v2 where
@@ -515,8 +514,6 @@ foreach my $patient_dir (@patient_dirs) {
 
 		#if ($load_type eq "all" || $load_type eq "tier") { #testing tiering 2/14/19	
 		if ($load_type eq "tier") { 
-			#print "Deleting from var_tier(_avia) where case_id='$case_id' and patient_id='$patient_id'\n";
-			$dbh->do("delete var_tier where case_id='$case_id' and patient_id='$patient_id'");
 			$dbh->do("delete var_tier_avia where case_id='$case_id' and patient_id='$patient_id'"); #<-----NEW ON 2/7/2018, why delete from var_tier and not var_tier_avia
 			if (!$replaced_old && $use_sqlldr) {
 				print_log("commiting tiering");
@@ -841,7 +838,6 @@ foreach my $patient_dir (@patient_dirs) {
 	}
 }
 
-$stn_rnaseqfp_khanlab->execute();
 $stn_rnaseqfp_avia->execute();
 
 my $subject   = "Oncogenomics $db_name DB upload status ($project_folder)";
@@ -1176,7 +1172,7 @@ sub insertCNV {
 	open (INFILE, "$filename") or return;
 	print_log("processing CNV");
 	#print "sample_id: $sample_id from $folder_name\n";
-	$dbh->do("delete var_cnv where case_id = '$case_id' and patient_id = '$patient_id'");
+	$dbh->do("delete from var_cnv where case_id = '$case_id' and patient_id = '$patient_id'");
 	my $line = <INFILE>;
 	chomp $line;
 	my @header_list = split(/\t/, $line);
@@ -1194,6 +1190,8 @@ sub insertCNV {
 		my $lpp = $fields[$#fields];
 		$lpp =~ s/Inf/99999999/;
 		next if ($cnt eq "NA");
+		next if ($a eq "NA");
+		next if ($b eq "NA");
 		$sth_cnv->execute($patient_id, $case_id, $sample_id, $chr, $start_pos, $end_pos, $cnt, $a, $b, $lpp);		
 	}
 	$dbh->commit();
@@ -1203,7 +1201,7 @@ sub insertCNV {
 	if ( -e $gene_segment_filename) {
 		open (GENE_SEG_FILE, "$gene_segment_filename");
 		print_log("processing sequenza gene segments: $gene_segment_filename");
-		$dbh->do("delete var_cnv_segment where case_id = '$case_id' and patient_id = '$patient_id'");
+		$dbh->do("delete from var_cnv_segment where case_id = '$case_id' and patient_id = '$patient_id'");
 		while(<GENE_SEG_FILE>) {
 			chomp;
 			my @fields = split(/\t/);
@@ -1212,6 +1210,8 @@ sub insertCNV {
 			my $lpp = $fields[6];
 			$lpp =~ s/Inf/99999999/;
 			next if ($cnt eq "NA");
+			next if ($fields[4] eq "NA");
+			next if ($fields[5] eq "NA");
 			$sth_cnv_segment->execute($patient_id, $case_id, $sample_id, $fields[0], $fields[1], $fields[2], $fields[3], $fields[4], $fields[5], $lpp, $fields[7]);
 		}
 		close(GENE_SEG_FILE);
@@ -1222,12 +1222,15 @@ sub insertCNV {
 	if ( -e $gene_level_filename) {
 		open (GENE_LEVEL_FILE, "$gene_level_filename");
 		print_log("processing sequenza gene level: $gene_level_filename");
-		$dbh->do("delete var_cnv_gene_level where case_id = '$case_id' and patient_id = '$patient_id'");
+		$dbh->do("delete from var_cnv_gene_level where case_id = '$case_id' and patient_id = '$patient_id'");
 		<GENE_LEVEL_FILE>;
 		while(<GENE_LEVEL_FILE>) {
 			chomp;
 			my @fields = split(/\t/);
-			next if ($#fields == 0);			
+			next if ($#fields == 0);
+			next if ($fields[4] == 0);	
+			next if ($fields[5] == 0);	
+			next if ($fields[6] == 0);			
 			$sth_cnv_gene->execute($patient_id, $case_id, $sample_id, $fields[0], $fields[1], $fields[2], $fields[3], $fields[4], $fields[5], $fields[6]);
 		}
 		close(GENE_LEVEL_FILE);
@@ -1255,7 +1258,7 @@ sub insertCNVKit {
 	}
 	open (INFILE, "$filename") or return;
 	print_log("processing CNVKit");
-	$dbh->do("delete var_cnvkit where case_id = '$case_id' and patient_id = '$patient_id'");
+	$dbh->do("delete from var_cnvkit where case_id = '$case_id' and patient_id = '$patient_id'");
 	my $line = <INFILE>;
 	chomp $line;
 	my @header_list = split(/\t/, $line);
@@ -1279,7 +1282,7 @@ sub insertCNVKit {
 	if ( -e $gene_segment_filename) {
 		open (GENE_SEG_FILE, "$gene_segment_filename");
 		print_log("processing CNVKit gene segments: $gene_segment_filename");
-		$dbh->do("delete var_cnvkit_segment where case_id = '$case_id' and patient_id = '$patient_id'");
+		$dbh->do("delete from var_cnvkit_segment where case_id = '$case_id' and patient_id = '$patient_id'");
 		while(<GENE_SEG_FILE>) {
 			chomp;
 			my @fields = split(/\t/);
@@ -1308,7 +1311,7 @@ sub insertCNVKitGene {
 	}
 	open (INFILE, "$filename") or return;
 	print_log("processing CNVKit gene level");
-	$dbh->do("delete var_cnvkit_gene_level where case_id = '$case_id' and patient_id = '$patient_id'");
+	$dbh->do("delete from var_cnvkit_gene_level where case_id = '$case_id' and patient_id = '$patient_id'");
 	my $line = <INFILE>;
 	chomp $line;
 	my @header_list = split(/\t/, $line);
@@ -1656,10 +1659,7 @@ sub insertTier {
 			if ($annotation eq "AVIA") {
 				#print("inserting avia\n");
 				$sth_tier_avia->execute($fields[0],$fields[1],$fields[2],$fields[3],$fields[4],$case_id, $patient_id, $sample_id, $type, $somatic_tier, $germline_tier, $gene,$maf,$total_cov,$vaf);
-			} else {
-				#print("inserting khanlab\n");
-				$sth_tier->execute($fields[0],$fields[1],$fields[2],$fields[3],$fields[4],$case_id, $patient_id, $sample_id, $type, $somatic_tier, $germline_tier, $gene,$maf,$total_cov,$vaf);
-			}
+			} 
 		}
 	}
 	$dbh->commit();

@@ -4,21 +4,36 @@ use Getopt::Long qw(GetOptions);
 
 
 sub getDBI {
-  my ($host, $sid, $username, $passwd, $port) = getDBConfig();  
-  my $dbh = DBI->connect( "dbi:Oracle:host=$host;port=$port;sid=$sid", $username, $passwd, {
+  my ($db_type, $host, $sid, $username, $passwd, $port) = getDBConfig();
+  my $dbh;
+  #print "$db_type\n";
+  if ($db_type eq "oracle") {  
+    $dbh = DBI->connect( "dbi:Oracle:host=$host;port=$port;sid=$sid", $username, $passwd, {
       AutoCommit => 0,
       RaiseError => 1,    
-  }) || die( $DBI::errstr . "\n" );
+    }) || die( $DBI::errstr . "\n" );
+  }
+  if ($db_type eq "mysql") {  
+    $dbh = DBI->connect( "dbi:mysql:$sid:$host", $username, $passwd, {
+      AutoCommit => 0,
+      RaiseError => 1,    
+    }) || die( $DBI::errstr . "\n" );
+  }
   return $dbh;
 }
 
 sub getDBHost {
-  my ($host, $sid, $username, $passwd, $port) = getDBConfig();
+  my ($db_type, $host, $sid, $username, $passwd, $port) = getDBConfig();
   return $host;
 }
 
+sub getDBType {
+  my ($db_type, $host, $sid, $username, $passwd, $port) = getDBConfig();
+  return $db_type;
+}
+
 sub getDBSID {
-  my ($host, $sid, $username, $passwd, $port) = getDBConfig();
+  my ($db_type, $host, $sid, $username, $passwd, $port) = getDBConfig();
   return $sid;
 }
 
@@ -34,6 +49,7 @@ sub print_log {
 sub getConfig {
   my ($key) = @_;
   my $script_dir = dirname(__FILE__);
+  print("using env file: $script_dir/../../../.env");
   my $config_refs = _getConfig("$script_dir/../../../.env");
   my %configs = %$config_refs;
   foreach $_key (keys %configs) {
@@ -56,6 +72,7 @@ sub getDBConfig {
   my $script_dir = dirname(__FILE__);
   my $config_refs = _getConfig("$script_dir/../../../.env");
   my %configs = %$config_refs;
+  my $dbtype = "";
   my $host = "";
   my $sid = "";
   my $username = "";
@@ -63,6 +80,9 @@ sub getDBConfig {
   my $port="";
   foreach $key (keys %configs) {
         my $value = $configs{$key};
+        if ($key eq "DB_CONNECTION") {
+          $db_type = $value;
+        }
         if ($key eq "DB_HOST") {
           $host = $value;
         }
@@ -79,7 +99,7 @@ sub getDBConfig {
           $port = $value;
         }
         if ($host ne "" && $sid ne "" && $username ne "" && $passwd ne "" && $port ne "") {
-          return ($host, $sid, $username, $passwd, $port);
+          return ($db_type, $host, $sid, $username, $passwd, $port);
         }   
   }
   return ();  

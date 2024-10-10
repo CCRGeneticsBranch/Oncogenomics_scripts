@@ -110,14 +110,14 @@ if ($project_id eq "all") {
 	}	
 }
 
-$dbh->do("alter index PROJECT_VALUES_PK INVISIBLE");
+#$dbh->do("alter index project_values_pk invisible");
 my $all_start = time;
 foreach my $pid (keys %projects) {
 	print "Clean up old data...$sid";
 	my $start = time;
 	if (! $no_exp) {
-		$dbh->do("delete from PROJECT_VALUES where project_id=$pid");	
-		$dbh->do("update PROJECTS set status=0 where id=$pid");	
+		$dbh->do("delete from project_values where project_id=$pid");	
+		$dbh->do("update projects set status=0 where id=$pid");	
 		$dbh->commit();
 	}
 	my $duration = time - $start;
@@ -140,6 +140,7 @@ foreach my $pid (keys %projects) {
 	#foreach my $thr(@thrs) {
 	#	$thr->join();
 	#}
+	$dbh->disconnect();
 
 	$duration = time - $start;
 	#make variants and VCF zip files
@@ -163,10 +164,10 @@ foreach my $pid (keys %projects) {
 	system("chgrp -f -R ncif-www-onc-grp $out_dir/$pid;chmod -f -R 770 $out_dir/$pid");
 	print "Total time for project $pid: $duration s\n";
 }
-$dbh->do("alter index PROJECT_VALUES_PK VISIBLE");
-$dbh->do("alter index PROJECT_STAT_PK VISIBLE");
+#$dbh->do("alter index project_values_pk visible");
+#$dbh->do("alter index project_stat_pk visible");
 
-$dbh->disconnect();
+
 my $total_duration = time - $all_start;
 print "total time: $total_duration s\n";
 my $size = keys %projects;

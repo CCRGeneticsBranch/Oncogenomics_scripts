@@ -1,0 +1,104 @@
+AFR_1000G	201508	21-FEB-17	AFR Allele Frequency from 1000G; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+ALL_1000G	201508	21-FEB-17	ALL Allele Frequency from 1000G; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+ALT_SPLICE	NA	21-FEB-17	Ensembl Splice events; static version
+AMR_1000G	201508	21-FEB-17	AMR Allele Frequency from 1000G; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+ANNOVAR_ANNOT		03-APR-20	ANNOVAR genic annotations
+CADD_PHRED	1.0	21-APR-20	CADD Phred Score (a scaled C-score of greater of equal 10 indicates that these are predicted to be the 10% most deleterious substitutions that you can do to the human genome, a score of greater or equal 20 indicates the 1% most deleterious and so on); downloaded from https://cadd.gs.washington.edu/download
+CADD_RAW	1.0	21-APR-20	CADD Raw score; downloaded from https://cadd.gs.washington.edu/download
+CANDL	v.1.1	05-MAY-20	Cancer Driver Log (CanDL): Catalog of Potentially Actionable Cancer Mutations; downloaded from https://candl.osu.edu/download/full
+CG69	201206	21-FEB-17	Allele Frequencies from Complete Genomics dataset; static version
+CIVIC	20200301	03-MAR-20	Clinical Interpretations of Variants in Cancer; downloaded from https://civicdb.org/home
+CLINSEQ	STATIC	21-FEB-17	A Large-Scale Medical Sequencing Clinical Research Pilot Study; static version
+CLINVITAE	20200521	21-MAY-20	CLINVITAE is a database of clinically-observed genetic variants; downloaded from http://clinvitae.invitae.com/
+CPGISLANDEXT	20200520	20-MAY-20	CpG Islands, downloaded from UCSC. If variant is within a CpG island, the number represents the count of CpGs in the island.
+CYTOBAND	201203	21-FEB-17	Location of cytogenic band using UCSC's CytoBand database
+DBNSFP31A_INTERPRO	31a	21-FEB-17	InterPro Domains from dbnSFP; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+DBPTM	20200514	21-MAY-20	Post translational modifications from dbPTM; downloaded from http://dbptm.mbc.nctu.edu.tw/
+DBSNP	v154	30-JUL-20	NCBI's dbSNP; downloaded from https://www.ncbi.nlm.nih.gov/snp/
+DGVMERGED	201312	21-FEB-17	Database of Genomic Variants (DGV) ID, type and PubMed source using DGV; downloaded from UCSC
+DOCM	v3.2	16-APR-20	Database of Curated Mutations; downloaded from http://docm.info/
+EAS_1000G	201508	21-FEB-17	EAS Allele Frequency from 1000G; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+ENS_ANNOVAR_ANNOT		21-FEB-17	Ensembl Annotation
+ENS_ANNOVAR_FEAT		21-FEB-17	Ensembl Relative Features
+ENS_GENE		21-FEB-17	Ensembl Gene
+ENS_GENE_ORI		21-FEB-17	Ensembl Gene Orientation
+ENS_PROTPOS		21-FEB-17	Ensembl Protein Position
+ESEFINDER	v3.0	21-FEB-17	Exonic Splice Enhancer Motifs; static version; downloaded from http://rulai.cshl.edu/
+ESP6500_AA	v2	21-FEB-17	Allele Frequencies from NHLBI's Exon Sequencing Project; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+ESP6500_ALL	v2	21-FEB-17	Allele Frequencies from NHLBI's Exon Sequencing Project; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+ESP6500_EA	v2	21-FEB-17	Allele Frequencies from NHLBI's Exon Sequencing Project; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+EUR_1000G	201508	21-FEB-17	EUR Allele Frequency from 1000G; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+EXAC_AF	20190417	17-APR-19	ExAC Integration of Exome Datasets Population Allele Frequency; static version; for hg19, downloaded from http://exac.broadinstitute.org/; for hg38, downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+EXAC_ZYG	20190417	17-APR-19	ExAC Integration of Exome Datasets Population Zygosity; static version; downloaded from http://exac.broadinstitute.org/
+EXACNONTCGA_AF	20190417	17-APR-19	ExAC (nonTCGA) Integration of Exome Datasets Population Allele Frequency; static version; for hg19, downloaded from http://exac.broadinstitute.org/; for hg38, downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+EXACNONTCGA_ZYG	20190417	17-APR-19	ExAC (nonTCGA) Integration of Exome Datasets Population Zygosity; static version; downloaded from http://exac.broadinstitute.org/
+FANTOM5_CAGE_PEAK	201502	21-FEB-17	FANTOM5 CAGEPeaks; downloaded from FANTOM https://fantom.gsc.riken.jp/5/
+FANTOM5_ENHANCERS	201502	21-FEB-17	FANTOM5 Enhancers locations; downloaded from FANTOM https://fantom.gsc.riken.jp/5/
+FANTOM5_TSSPREDICTIONS	201502	21-FEB-17	FANTOM5 Transcript Start Site locations; downloaded from FANTOM https://fantom.gsc.riken.jp/5/
+FATHMM	ljb2.6	21-FEB-17	Scores for predicting functional consequences of both coding and non-coding variants; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+GENE		21-FEB-17	Gene or nearest gene, if intergenic; may also display intronic splice variants
+GENE_ORI		21-FEB-17	Gene Orientation
+GENOMICSUPERDUPS	201304	21-FEB-17	Score and position of genomic duplications using data downloaded from UCSC
+GME	201612	21-FEB-17	Greater Middle East Exome Variome Project Allele Frequencies; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+GNOMAD_EXOME	v2_1_1	26-MAY-20	gnomAD exome collection; downloaded from https://gnomad.broadinstitute.org/
+GNOMAD_GENOME	v2_1_1	26-MAY-20	gnomAD whole genome sequencing (coding only) collection; downloaded from https://gnomad.broadinstitute.org/
+GWAVA	20150623	21-FEB-17	Genome Wide Annotations of Variants (GWAVA) Scores; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+HAPMAP	v3.3	21-FEB-17	Allele Frequences from HapMap from GATK HapMap database; downloaded from GATK
+HMDD	v3.2	21-MAY-20	Human microRNA Disease Database; downloaded from http://www.cuilab.cn/hmdd
+HRCR1	201611	21-FEB-17	Haplotype Reference Consortium (HRC) Allele Freq; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+ICGC	v28	04-MAR-20	International Cancer Genome Consortium's Occurrence and frequencies; for hg38, liftOver used to convert positions; downloaded from https://dcc.icgc.org/releases/current
+INTERVAR	20180827	27-AUG-18	InterVar - Genetic Variants Prediction; for hg19, all variants are annotated using source code in github (code date 20180827); for hg38, use pre-computated Scores downloaded from ANNOVAR https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+INTERVAREVIDENCE	20180827	27-AUG-18	InterVar - Genetic Variants  Evidence Scores; for hg19, all variants are annotated using source code in github (code date 20180827); for hg38, use pre-computated Scores downloaded from ANNOVAR https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+LINCRNA	201203	21-FEB-17	Long intergenic non-coding RNAs; downloaded from http://www.noncode.org/
+LNCIPEDIA	v5.2	21-MAY-20	Long non-coding RNA names using LNCipedia; downloaded from https://lncipedia.org/
+MA	ljb2.6	21-FEB-17	Prediction and Score from Mutation Assessor, an algorithm that assesses the functional impact in proteins; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+MAF		12-JUL-20	Greatest Minor Allele Frequency of Normal Populations that includes 1000 Genomes, ExAC nonTCGA, gnomAD, and ESP datasets
+MATCHTRIAL	201511	21-FEB-17	NCI-MATCH Precision Medicine Clinical Trial; static version
+MCG	20150624	21-FEB-17	My Cancer Genome (now restricted)
+MICROPIR_TARGETS	v2	15-DEC-17	microPIR miRNA targets within human promoter sequences; downloaded from http://www4a.biotec.or.th/micropir
+MSKCC_HOTSPOTS	v2.0	21-MAY-20	Cancer Mutation Hotspots from MSKCC; downloaded from https://www.cancerhotspots.org/#/home
+MT	ljb2.6	21-FEB-17	Prediction and Score from Mutation Taster, an algorithm that calculates disease causing potential of sequence alterations; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/
+MUTALIGNER	20200521	21-MAY-20	Somatic mutation hotspots in protein domains in cancer from MutationAligner; downloaded from http://www.mutationaligner.org/
+NCI60	201308	21-FEB-17	Allele Frequencies for NCI-60 human tumor cell line panel; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/ 
+NONB	201203	21-FEB-17	Location of nonB structures from ABCC, FNLCR; data extracted from https://nonb-abcc.ncifcrf.gov
+OMIMGENE	20130502	21-FEB-17	OMIM Identifier; OMIM is a database of genes associated with Mendelian inheritance; downloaded from OMIM
+ONCOKB_API	20200521	12-MAY-20	OncoKB, a precision oncology knowledge base; downloaded from https://www.oncokb.org/
+PCG	20160426	21-FEB-17	Manually curated database of Pediatric Cancers; from Khan Lab
+PP2HDIV	ljb2.6	21-FEB-17	Prediction and score for Polyphen2, a predictive algorithm for nonsynonymous SNPs; for mm10, liftOver was used to convert to mouse genome; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/ 
+PP2HVAR	ljb2.6	21-FEB-17	Prediction and score for Polyphen2, a predictive algorithm for nonsynonymous SNPs; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/ 
+PROSITE_DOMAINS	20130104	21-FEB-17	Location and type of Prosite domains within transcripts; analyzed by ABCC from data downloaded from Prosite; static version
+PROTPOS		21-FEB-17	Transcript and Protein Amino Acid Change and Positions
+PROVEAN	v1.1	21-FEB-17	Precomputed Prediction and Score from PROtein Variation Effect Analyzer (PROVEAN) for coding variants in dbSNPv137 obtained from JCVI.  Provean is an algorithm that predicts the impact of a mutation on the biological function of a protein.
+REGULOME	153	17-JUL-20	RegulomeDB is a database of regulatory elements in intergenic regions and contains pre-calculated scores and evidence for common SNV in dbSNP153; downloaded from https://www.regulomedb.org/
+REVEL	20161205	21-FEB-17	Rare Exome Variant Ensemble Learner (REVEL); downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/ 
+RPTMASK	20120730	21-FEB-17	Type of Repeat using ABCC, FNLCR's Repeat Masker
+SAS_1000G	201508	21-FEB-17	SAS Allele Frequency from 1000G; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/ 
+SIFT	ljb2.6	21-FEB-17	SIFT scores and Predictions; for human, downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/ ; for mouse, run with SIFT4G annotator from https://sift.bii.a-star.edu.sg/sift4g/
+SOMAMIR	v2.0	15-DEC-17	DB of Cancer somatic mutations in miRNAs; downloaded from http://compbio.uthsc.edu/SomamiR/
+SOMAMIR_TARGETS	v2.0	15-DEC-17	DB of Cancer somatic mutations in miRNAs; downloaded from http://compbio.uthsc.edu/SomamiR/
+TARGETEDCANCERCARE	20200521	21-MAY-20	Targeted Cancer Care; downloaded from http://targetedcancercare.massgeneral.org/My-Trial-Guide.aspx
+TARGETSCANS	20120323	21-FEB-17	The gene target and its miRNA, using UCSC's targetScan 
+TASSDB	20120820	21-FEB-17	Gene and donor/acceptor status from TASS DB; static version
+TFBSCONSSITES	201212	21-FEB-17	Transcription Factor Binding Sites (TFBS) using UCSC tfbsConsSites data obtained from the Transfac Matrix Database (BioBase), which contains position-weight matrices for 398 transcription factor binding sites, as characterized through experimental results in the scientific literature.
+VEST	ljb2.6	21-FEB-17	Variant Effect Scoring Tool scores for prioritizing missense mutations; downloaded from ANNOVAR  https://annovar.openbioinformatics.org/en/latest/user-guide/download/ 
+VISTA_ENHANCER	20130122	21-FEB-17	Vista Enhancers Browser is a central resource for human and mouse noncoding fragments with gene enhancer activity, as assessed in transgenic mice; downloaded from https://enhancer.lbl.gov/
+VISTA_ENHANCER_EXPR_DATA	20130122	21-FEB-17	Vista Enhancers Browser is a central resource for human and mouse noncoding fragments with gene enhancer activity, as assessed in transgenic mice; downloaded from https://enhancer.lbl.gov/
+WGENCODEAWGTFBSUNIFORM	20130129	21-FEB-17	Transcription factor binding sites, Gene, and ChIP Seq Score using data from UCSC
+WGENCODECRGMAPALIGN100MER	20130129	21-FEB-17	ENCODE's Mapability Alignment 100mer; static version
+WGENCODEDUKEMAPREGIONSEXCL	20130129	21-FEB-17	ENCODE Region excludability Score; static version
+WGENCODEDUKEMAPUNIQ35BP	20130129	21-FEB-17	ENCODE's Uniqueness Score;static version
+WGRNA	NA	21-FEB-17	snoRNA and miRNA annotations using UCSC
+CLINVAR_BADGED	20200704	17-JUL-20	ClinVar submissions from badged labs; displays submission data only from ClinVar's badged laboratories; downloaded from https://ftp.ncbi.nlm.nih.gov/pub/clinvar/
+CLINVAR_SUBMISSIONS	20200704	17-JUL-20	Laboratory Submissions of variant from ClinVar; downloaded from https://www.ncbi.nlm.nih.gov/clinvar/
+DBSNP_AF	v154	30-JUL-20	NCBI's dbSNP; downloaded from https://www.ncbi.nlm.nih.gov/snp/
+GNOMAD_EXOMECOUNTS	v2_1_1	21-AUG-20	Counts from gnomAD exome collection; downloaded from https://gnomad.broadinstitute.org/
+GNOMAD_GENOMECOUNTS	v2_1_1	21-AUG-20	Counts gnomAD whole genome sequencing (coding only) collection; downloaded from https://gnomad.broadinstitute.org/
+HGVS		11-MAY-21	HGVS from the canonical transcript using MANE, UniProt and CCDS for canonical transcripts
+HGVS_ANY		03-JUN-21	HGVS from any transcript
+TCGA	20211220	20-DEC-21	Sample information of TCGA; downloaded from cBioPortal
+TCGA_COUNTS	20211220	20-DEC-21	Cancer Counts of TCGA; downloaded fromcBioPortal
+GENIE	v10.0	14-DEC-21	(from the Synapse website)The AACR Project Genomics, Evidence, Neoplasia, Information, Exchange (GENIE) is a pilot project that seeks to identify and validate genomic biomarkers relevant to cancer treatment by linking tumor genomic data from clinical sequencing efforts with longitudinal clinical outcomes. 
+GENIE_COUNTS	v10.0	14-DEC-21	(from the Synapse website)The AACR Project Genomics, Evidence, Neoplasia, Information, Exchange (GENIE) is a pilot project that seeks to identify and validate genomic biomarkers relevant to cancer treatment by linking tumor genomic data from clinical sequencing efforts with longitudinal clinical outcomes. 
+CLINVAR_LATEST	20210529	29-MAY-21	Clinical significance (SIG) of variants from ClinVar; for mouse mm10, liftOver was used to convert to mouse genome; downloaded from https://www.ncbi.nlm.nih.gov/clinvar/
+HGMD	202201	10-JUL-22	Human Gene Mutation Database (HGMD)
+COSMIC	v94	23-JUN-21	COSMIC db ID and occurrence; downloaded from https://cancer.sanger.ac.uk/cosmic
