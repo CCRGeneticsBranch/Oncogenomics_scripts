@@ -243,6 +243,15 @@ select v.*,c.genome_version from processed_cases c, var_samples v left join var_
 v.patient_id=a.patient_id and v.case_id=a.case_id and v.sample_id=a.sample_id and v.type=a.type and v.chromosome=a.chromosome and v.start_pos=a.start_pos and v.end_pos=a.end_pos and v.ref=a.ref and v.alt=a.alt )
 where v.patient_id=c.patient_id and v.case_id=c.case_id and a.patient_id is null
 end
+my $project_fusion = <<'END';
+select left_chr, left_gene, right_chr, right_gene, substr(var_level,1,1) as var_level, project_id,count(distinct v.patient_id) as count from var_fusion v, project_cases p 
+where v.patient_id=p.patient_id and v.case_id=p.case_id group by project_id,left_chr,left_gene,right_chr,right_gene,substr(var_level,1,1);
+END
+my $project_diagnosis_fusion = <<'END';
+select left_chr, left_gene, right_chr, right_gene, substr(var_level,1,1) as var_level, project_id,diagnosis,count(distinct v.patient_id) as count from var_fusion v, project_cases p, patients p2 
+where v.patient_id=p.patient_id and v.case_id=p.case_id and v.patient_id=p2.patient_id group by project_id,left_chr,left_gene,right_chr,right_gene,substr(var_level,1,1),diagnosis
+END
+
 my $var_sample_avia_oc_hg19 = <<'end';
 select v.*,a.* 
 from var_samples_tmp v, hg19_annot_oc a
@@ -375,6 +384,25 @@ if ($refresh_all || $do_cohort) {
   if ($db_type eq "mysql") {
     do_insert('var_top20', $var_top20_mysql, 1);
   }
+  do_insert('project_fusion', $project_fusion, 1);
+  do_insert('project_diagnosis_fusion', $project_diagnosis_fusion, 1);
+=======
+	print_log("Refrshing cohort views...on $sid");	
+  do_create('VAR_AA_COHORT_OC', $VAR_AA_COHORT_OC, \%VAR_AA_COHORT_OC_INDEXES);
+	do_create('VAR_GENES', $VAR_GENES, \%VAR_GENES_INDEXES);
+	do_insert('VAR_COUNT', $VAR_COUNT, 1);
+	do_create('VAR_DIAGNOSIS_AA_COHORT', $VAR_DIAGNOSIS_AA_COHORT, \%VAR_DIAGNOSIS_AA_COHORT_INDEXES);
+	do_create('VAR_DIAGNOSIS_GENE_COHORT', $VAR_DIAGNOSIS_GENE_COHORT, \%VAR_DIAGNOSIS_GENE_COHORT_INDEXES);
+	do_create('VAR_GENE_COHORT', $VAR_GENE_COHORT, \%VAR_GENE_COHORT_INDEXES);
+	do_create('VAR_GENE_TIER', $VAR_GENE_TIER, \%VAR_GENE_TIER_INDEXES);	
+	do_insert('PROJECT_DIAGNOSIS_GENE_TIER', $PROJECT_DIAGNOSIS_GENE_TIER, 1);
+	do_insert('PROJECT_GENE_TIER',$PROJECT_GENE_TIER, 1);
+	do_insert('VAR_TIER_AVIA_COUNT', $VAR_TIER_AVIA_COUNT, 1);
+	do_insert('VAR_TOP20', $VAR_TOP20, 1);
+  do_insert('PROJECT_FUSION', $PROJECT_FUSION, 1);
+  do_insert('PROJECT_DIAGNOSIS_FUSION', $PROJECT_DIAGNOSIS_FUSION, 1);
+	
+>>>>>>> 54c74714cbdd507882ad9921a7ec0204c8bbe10d
 }
 
 #do_insert('var_patient_annotation',0);

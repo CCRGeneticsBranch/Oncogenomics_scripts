@@ -17,6 +17,7 @@ my %project_mapping = ();
 open (PRJ, $project_file);
 while(<PRJ>){
   my @fields = split(/\t/);
+  next if ($#fields < 2);
   $fields[2] =~ s/helix\.nih\.gov://;
   $project_mapping{$fields[0]} = $fields[2];
 }

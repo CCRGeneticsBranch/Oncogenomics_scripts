@@ -118,7 +118,7 @@ dge <- NULL
 gc()
 
 #remove library type effect
-if (!is.null(batch) && nlevels(batch) > 1 && 1==2) {
+if (!is.null(batch) && nlevels(batch) > 1) {
     lrpkm  <- log2(rpkm + 1)
     print("removing library type effect")          
     design <- matrix(1,ncol(lcpm),1)
