@@ -109,6 +109,7 @@ if (!$update_list_file) {
 
 
 my $dbh = getDBI();
+my $db_type = getDBType();
 #$dbh->trace(4);
 
 chdir $dir;
@@ -120,11 +121,9 @@ my $var_annotation_dtl_tbl = "var_annotation_details";
 #my $sth_ano_exists = $dbh->prepare("select count(*) from $var_annotation_tbl where chromosome = ? and start_pos = ? and end_pos = ? and ref = ? and alt = ?");
 my $sth_diag = $dbh->prepare("select diagnosis from patients where patient_id=?");
 my $sth_emails = $dbh->prepare("select email_address from users where permissions like '%_superadmin%'");
-my $sth_fu = $dbh->prepare("insert into /*+ APPEND */ var_fusion values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-my $sth_fu_dtl = $dbh->prepare("insert into /*+ APPEND */ var_fusion_dtl values(?,?,?,?,?,?,?,?,?,?)");
-my $sth_fu_details = $dbh->prepare("insert into /*+ ignore_row_on_dupkey_index ( var_fusion_details ( left_gene, right_gene, left_chr, left_position, right_gene, right_position ) ) */ var_fusion_details values(?,?,?,?,?,?,?,?,?) ");
-my $sth_smp = $dbh->prepare("insert into  /*+ APPEND */ $var_sample_tbl values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-my $sth_splice = $dbh->prepare("insert into  /*+ APPEND */ var_splicing values (?,?,?,?,?,?,?,?,?,?,?,?)");
+my $sth_fu = $dbh->prepare("insert into var_fusion values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+my $sth_smp = $dbh->prepare("insert into $var_sample_tbl values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+my $sth_splice = $dbh->prepare("insert into var_splicing values (?,?,?,?,?,?,?,?,?,?,?,?)");
 #my $sth_ano = $dbh->prepare("insert into $annotation_tbl values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 #my $sth_ano = $dbh->prepare("insert into $var_annotation_tbl values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 #my $sth_ano_dtl = $dbh->prepare("insert into $var_annotation_dtl_tbl values(?,?,?,?,?,?,?,?)");
@@ -452,10 +451,17 @@ foreach my $patient_dir (@patient_dirs) {
 			if ($#genome_version_ret >= 0) {
 				$genome_version = $genome_version_ret[0];
 			}
-			chomp $genome_version;			
-			my $sql = "insert into processed_cases values('$patient_id', '$case_id', '$project_folder', '$status', TO_TIMESTAMP('$last_mod_time', 'YYYY-MM-DD HH24:MI:SS'), CURRENT_TIMESTAMP,CURRENT_TIMESTAMP, '$version', '$genome_version')";
+			chomp $genome_version;
+			my $convert_time_fun = "TO_TIMESTAMP";
+			my $date_format = "YYYY-MM-DD HH24:MI:SS";
+			if ($db_type == "mysql") {
+				$convert_time_fun = "STR_TO_DATE";
+				$date_format = "%Y-%m-%d %H:%i:%i";
+			}		
+			
+			my $sql = "insert into processed_cases values('$patient_id', '$case_id', '$project_folder', '$status', $convert_time_fun('$last_mod_time', '$date_format'), CURRENT_TIMESTAMP,CURRENT_TIMESTAMP, '$version', '$genome_version')";
 			if ($exists) {					
-				$sql = "update processed_cases set genome_version='$genome_version', version='$version', status='$status', finished_at=TO_TIMESTAMP('$last_mod_time', 'YYYY-MM-DD HH24:MI:SS'), updated_at=CURRENT_TIMESTAMP where patient_id='$patient_id' and case_id='$case_id'";
+				$sql = "update processed_cases set genome_version='$genome_version', version='$version', status='$status', finished_at=$convert_time_fun('$last_mod_time', '$date_format'), updated_at=CURRENT_TIMESTAMP where patient_id='$patient_id' and case_id='$case_id'";
 			}
 			#print "$sql\n";
 			#print "\tinserted into or updated time in CASES table..\n";
@@ -505,7 +511,7 @@ foreach my $patient_dir (@patient_dirs) {
 		
 		if ($load_type eq "all" || $load_type eq "variants") {
 			#print "deleting from $var_sample_tbl (case_id='$case_id' and patient_id='$patient_id')\n";
-			$dbh->do("delete $var_sample_tbl where case_id='$case_id' and patient_id='$patient_id'");
+			$dbh->do("delete from $var_sample_tbl where case_id='$case_id' and patient_id='$patient_id'");
 			if (!$replaced_old && $use_sqlldr) {
 				print "commiting $var_sample_tbl\n";
 				$dbh->commit();
@@ -514,7 +520,7 @@ foreach my $patient_dir (@patient_dirs) {
 
 		#if ($load_type eq "all" || $load_type eq "tier") { #testing tiering 2/14/19	
 		if ($load_type eq "tier") { 
-			$dbh->do("delete var_tier_avia where case_id='$case_id' and patient_id='$patient_id'"); #<-----NEW ON 2/7/2018, why delete from var_tier and not var_tier_avia
+			$dbh->do("delete from var_tier_avia where case_id='$case_id' and patient_id='$patient_id'"); #<-----NEW ON 2/7/2018, why delete from var_tier and not var_tier_avia
 			if (!$replaced_old && $use_sqlldr) {
 				print_log("commiting tiering");
 				$dbh->commit();
@@ -522,8 +528,8 @@ foreach my $patient_dir (@patient_dirs) {
 		}
 
 		if ($load_type eq "all" || $load_type eq "qci") {
-			$dbh->do("delete var_qci_annotation where case_id = '$case_id' and patient_id = '$patient_id'");
-			$dbh->do("delete var_qci_summary where case_id = '$case_id' and patient_id = '$patient_id'");
+			$dbh->do("delete from var_qci_annotation where case_id = '$case_id' and patient_id = '$patient_id'");
+			$dbh->do("delete from var_qci_summary where case_id = '$case_id' and patient_id = '$patient_id'");
 		}
 
 		foreach my $file (@files) {
@@ -600,11 +606,13 @@ foreach my $patient_dir (@patient_dirs) {
 			
 			#update expression coverage			
 			#$sth_update_pat_exp_cov->execute($patient_id, $case_id);
-			$sth_update_smp_dna_cov->execute($patient_id, $case_id);
-			$sth_update_smp_exp_cov->execute($patient_id, $case_id);
-			$sth_update_smp_hotspot_dna_cov->execute($patient_id, $case_id);
-			$sth_update_smp_hotspot_exp_cov->execute($patient_id, $case_id);
+			
+			#$sth_update_smp_dna_cov->execute($patient_id, $case_id);
+			#$sth_update_smp_exp_cov->execute($patient_id, $case_id);
+			#$sth_update_smp_hotspot_dna_cov->execute($patient_id, $case_id);
+			#$sth_update_smp_hotspot_exp_cov->execute($patient_id, $case_id);			
 			#$sth_update_pat_dna_cov->execute($patient_id, $case_id);
+			
 			#$sth_delete_smp_rnaseq_splicing->execute($patient_id, $case_id); #<------------------DELETING SPLICE VARIANTS
 			#$sth_delete_pat_rnaseq_splicing->execute($patient_id, $case_id);
 			$dbh->commit();
@@ -627,7 +635,7 @@ foreach my $patient_dir (@patient_dirs) {
 		#process QC		
 		if ($load_type eq "all" || $load_type eq "qc" || $load_type eq "variants") {
 			#print ("deleting qc data\n");
-			$dbh->do("delete var_qc where case_id = '$case_id' and patient_id = '$patient_id'");	
+			$dbh->do("delete from var_qc where case_id = '$case_id' and patient_id = '$patient_id'");	
 		}
 		
 		my $qc_file = "$patient_id/$case_id/qc/$patient_id.consolidated_QC.txt";
@@ -1002,8 +1010,8 @@ sub insertMixcr {
 	}
 	open (SUMMARY_FILE, "$summary_file") or return;
 	print_log("processing Mixcr");
-	$dbh->do("delete mixcr_summary where case_id = '$case_id' and patient_id = '$patient_id' and sample_id = '$sample_id'");
-	$dbh->do("delete mixcr where case_id = '$case_id' and patient_id = '$patient_id' and sample_id = '$sample_id'");
+	$dbh->do("delete from mixcr_summary where case_id = '$case_id' and patient_id = '$patient_id' and sample_id = '$sample_id'");
+	$dbh->do("delete from mixcr where case_id = '$case_id' and patient_id = '$patient_id' and sample_id = '$sample_id'");
 	$dbh->commit();
 
 	my $exp_type = "RNAseq";
@@ -1054,7 +1062,7 @@ sub insertNeoAntigen {
 	}
 	open (INFILE, "$filename") or return;
 	print_log("processing NeoAntigen");
-	$dbh->do("delete neo_antigen where case_id = '$case_id' and patient_id = '$patient_id' and sample_id = '$sample_id'");
+	$dbh->do("delete from neo_antigen where case_id = '$case_id' and patient_id = '$patient_id' and sample_id = '$sample_id'");
 	$dbh->commit();
 
 	my $antigen_file = $dir.$patient_id."/$case_id/$folder_name/NeoAntigen/$folder_name.antigen.tsv";
@@ -1086,7 +1094,7 @@ sub insertAntigen {
 	}
 	open (INFILE, "$filename") or return;
 	print_log("processing NeoAntigen");
-	$dbh->do("delete neo_antigen where case_id = '$case_id' and patient_id = '$patient_id' and sample_id = '$sample_id'");
+	$dbh->do("delete from neo_antigen where case_id = '$case_id' and patient_id = '$patient_id' and sample_id = '$sample_id'");
 	$dbh->commit();
 
 	my $antigen_file = $dir.$patient_id."/$case_id/$folder_name/NeoAntigen/$folder_name.antigen.tsv";
@@ -1120,7 +1128,7 @@ sub insertBurden {
 	}
 	if ($#burden_files >= 0) {
 		print_log("processing Mutationburden: $file_pattern");
-		$dbh->do("delete mutation_burden where sample_id = '$sample_id' and patient_id = '$patient_id' and case_id='$case_id'");
+		$dbh->do("delete from mutation_burden where sample_id = '$sample_id' and patient_id = '$patient_id' and case_id='$case_id'");
 	} else {
 		return 0;
 	}
@@ -1373,7 +1381,7 @@ sub insertTCellExTRECT {
 	}
 	open (INFILE, "$filename") or return;
 	print_log("processing TCellExTRECT");
-	$dbh->do("delete tcell_extrect where case_id = '$case_id' and patient_id = '$patient_id'");
+	$dbh->do("delete from tcell_extrect where case_id = '$case_id' and patient_id = '$patient_id'");
 	<INFILE>;
 	my $line = <INFILE>;	
 	#print "$line\n";
@@ -1416,7 +1424,7 @@ sub insertCNVTSO500 {
 	}
 	open (INFILE, "$filename") or return;
 	print_log("processing CNVTSO500");
-	$dbh->do("delete var_cnvtso where case_id = '$case_id' and patient_id = '$patient_id'");
+	$dbh->do("delete from var_cnvtso where case_id = '$case_id' and patient_id = '$patient_id'");
 	my $line = <INFILE>;
 	chomp $line;
 	my @header_list = split(/\t/, $line);
@@ -1458,7 +1466,7 @@ sub insertSplice {
 	}	
 	open (INFILE, "$filename") or return;
 	print_log("processing Splicing");
-	$dbh->do("delete var_splicing where case_id = '$case_id' and patient_id = '$patient_id'");
+	$dbh->do("delete from var_splicing where case_id = '$case_id' and patient_id = '$patient_id'");
 	my $line = <INFILE>;
 	chomp $line;
 	my @header_list = split(/\t/, $line);
@@ -1500,7 +1508,7 @@ sub insertNewFusion {
 	#print "processing fusion file: $file\n";
 	open(INFILE, "$file") or die "Cannot open file $file";
 	<INFILE>;
-	my $del_sql = "delete var_fusion where case_id = '$case_id' and patient_id = '$patient_id'";
+	my $del_sql = "delete from var_fusion where case_id = '$case_id' and patient_id = '$patient_id'";
 	$dbh->do($del_sql);
 	
 	my $min_column = 21;
@@ -1535,7 +1543,7 @@ sub insertNewFusion {
 
 sub insertQC {
 	my ($case_id, $patient_id, $file, $type) = @_;
-	#$dbh->do("delete var_qc where case_id = '$case_id' and patient_id = '$patient_id' and type = '$type'");
+	#$dbh->do("delete from var_qc where case_id = '$case_id' and patient_id = '$patient_id' and type = '$type'");
 	print_log("processing QC file: $file");
 		
 	open(INFILE, "$file") or die "Cannot open file $file";
@@ -1699,8 +1707,8 @@ sub insertSample {
 		$dbh->commit();
 	}
 	return if (!-e $file);
-	#$dbh->do("delete $var_sample_tbl where case_id='$case_id' and patient_id='$patient_id' and type='$type'");
-	#$dbh->do("delete $var_patient_tbl where case_id='$case_id' and patient_id='$patient_id' and type='$type'");
+	#$dbh->do("delete from $var_sample_tbl where case_id='$case_id' and patient_id='$patient_id' and type='$type'");
+	#$dbh->do("delete from $var_patient_tbl where case_id='$case_id' and patient_id='$patient_id' and type='$type'");
 	print_log("processing $type (reading $file)");
 
 	#if (-e $sample_file && !$replaced_old && $use_sqlldr) {

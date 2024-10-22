@@ -49,7 +49,7 @@ sub print_log {
 sub getConfig {
   my ($key) = @_;
   my $script_dir = dirname(__FILE__);
-  print("using env file: $script_dir/../../../.env");
+  #print("using env file: $script_dir/../../../.env");
   my $config_refs = _getConfig("$script_dir/../../../.env");
   my %configs = %$config_refs;
   foreach $_key (keys %configs) {

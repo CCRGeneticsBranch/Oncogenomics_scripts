@@ -4,6 +4,7 @@ use warnings;
 use File::Basename;
 use Cwd 'abs_path';
 use Time::Piece;
+use DBI;
 require(dirname(abs_path($0))."/../lib/Onco.pm");
 
 my $refresh_all = 0;
@@ -187,11 +188,16 @@ end
 my $var_count = <<'end';
   select chromosome, start_pos, end_pos, type, count(distinct patient_id) as patient_count from var_samples where type = 'germline' or type = 'somatic' group by chromosome, start_pos, end_pos, type;
 end
+#my $var_aa_cohort_oc = <<'end';
+#select project_id, gene, aa_site, type,count(patient_id) as cnt from (select distinct project_id, p2.patient_id,
+#  gene, canonicalprotpos as aa_site, p1.type from var_sample_avia_oc p1, project_patients p2 where
+#  p1.patient_id=p2.patient_id) co
+#  group by project_id, gene, aa_site, type;
+#end
 my $var_aa_cohort_oc = <<'end';
-select project_id, gene, aa_site, type,count(patient_id) as cnt from (select distinct project_id, p2.patient_id,
-  gene, canonicalprotpos as aa_site, p1.type from var_sample_avia_oc p1, project_patients p2 where
-  p1.patient_id=p2.patient_id) co
-  group by project_id, gene, aa_site, type;
+select project_id, gene, canonicalprotpos as aa_site, p1.type, count(distinct p1.patient_id) from 
+var_sample_avia_oc p1, project_patients p2 where p1.patient_id=p2.patient_id   
+group by project_id, gene, aa_site, type;
 end
 my $var_diagnosis_aa_cohort = <<'end';
 select project_id, diagnosis, gene, aa_site, type,count(patient_id) as cnt from (select distinct project_id, p2.diagnosis, p2.patient_id,
@@ -214,12 +220,12 @@ select project_id, gene, type,count(patient_id) as cnt from (select distinct pro
 end
 my $var_gene_tier = <<'end';
 select distinct p1.patient_id, p1.type, p1.gene, canonicalprotpos, germline_level, somatic_level from var_tier_avia p1,
-  var_sample_avia_oc a where
-  p1.chromosome=a.chromosome and
-  p1.start_pos=a.start_pos and
-  p1.end_pos=a.end_pos and
-  p1.ref=a.ref and
-  p1.alt=a.alt and p1.gene is not null;
+  hg19_annot_oc a where
+  p1.chromosome=a.chr and
+  p1.start_pos=a.query_start and
+  p1.end_pos=a.query_end and
+  p1.ref=a.allele1 and
+  p1.alt=a.allele2 and p1.gene is not null;
 end
 my $var_genes = <<'end';
 select distinct s.patient_id, s.sample_id, s.exp_type, s.tissue_cat, s.normal_sample, s.rnaseq_sample, a.gene, a.type
@@ -367,7 +373,7 @@ if ((1==2) && ($refresh_all || $do_cnv)) {
 }
 
 if ($refresh_all || $do_cohort) {
-  print_log("Refrshing cohort views...on $sid");    
+  print_log("Refrshing cohort views...on $sid");
   do_create('var_aa_cohort_oc', $var_aa_cohort_oc, \%var_aa_cohort_oc_indexes);
   do_create('var_genes', $var_genes, \%var_genes_indexes);
   do_insert('var_count', $var_count, 1);
@@ -386,23 +392,7 @@ if ($refresh_all || $do_cohort) {
   }
   do_insert('project_fusion', $project_fusion, 1);
   do_insert('project_diagnosis_fusion', $project_diagnosis_fusion, 1);
-=======
-	print_log("Refrshing cohort views...on $sid");	
-  do_create('VAR_AA_COHORT_OC', $VAR_AA_COHORT_OC, \%VAR_AA_COHORT_OC_INDEXES);
-	do_create('VAR_GENES', $VAR_GENES, \%VAR_GENES_INDEXES);
-	do_insert('VAR_COUNT', $VAR_COUNT, 1);
-	do_create('VAR_DIAGNOSIS_AA_COHORT', $VAR_DIAGNOSIS_AA_COHORT, \%VAR_DIAGNOSIS_AA_COHORT_INDEXES);
-	do_create('VAR_DIAGNOSIS_GENE_COHORT', $VAR_DIAGNOSIS_GENE_COHORT, \%VAR_DIAGNOSIS_GENE_COHORT_INDEXES);
-	do_create('VAR_GENE_COHORT', $VAR_GENE_COHORT, \%VAR_GENE_COHORT_INDEXES);
-	do_create('VAR_GENE_TIER', $VAR_GENE_TIER, \%VAR_GENE_TIER_INDEXES);	
-	do_insert('PROJECT_DIAGNOSIS_GENE_TIER', $PROJECT_DIAGNOSIS_GENE_TIER, 1);
-	do_insert('PROJECT_GENE_TIER',$PROJECT_GENE_TIER, 1);
-	do_insert('VAR_TIER_AVIA_COUNT', $VAR_TIER_AVIA_COUNT, 1);
-	do_insert('VAR_TOP20', $VAR_TOP20, 1);
-  do_insert('PROJECT_FUSION', $PROJECT_FUSION, 1);
-  do_insert('PROJECT_DIAGNOSIS_FUSION', $PROJECT_DIAGNOSIS_FUSION, 1);
-	
->>>>>>> 54c74714cbdd507882ad9921a7ec0204c8bbe10d
+
 }
 
 #do_insert('var_patient_annotation',0);
@@ -429,6 +419,9 @@ sub do_insert {
   $sql =~ s/;//g;
   if ($show_sql) {
     print_log("sql: $sql");
+  }
+  if ($db_type eq "mysql") {
+    $dbh->do("SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;");
   }
   if ($truncate) {
     $dbh->do("truncate table $table_name");
@@ -463,13 +456,18 @@ sub do_create {
   if ($show_sql) {
     print_log("sql: $sql");
   }
+  if ($db_type eq "mysql") {
+    $dbh->do("SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;");
+  }
   if ($db_type eq "oracle") {
     $dbh->do("begin execute immediate 'drop table $table_name'; exception when others then if sqlcode != -942 then raise;end if;end;");
   }
+  my $engine = "";
   if ($db_type eq "mysql") {
     $dbh->do("drop table if exists $table_name");
+    $engine = "engine=MyISAM";
   }
-  $dbh->do("create table $table_name as $sql");
+  $dbh->do("create table $table_name $engine as $sql");
   foreach my $index_name (keys %indexes){
     my $columns = $indexes{$index_name};
     $dbh->do("create index $index_name on $table_name ($columns)");

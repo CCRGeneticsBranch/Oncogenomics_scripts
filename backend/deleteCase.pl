@@ -68,20 +68,20 @@ if (my @row = $sth_var_cases->fetchrow_array) {
 $sth_var_cases->finish;
 #if ($found) {
   print_log("deleting DB $patient_id, $case_id, $path");
-  $dbh->do("delete var_samples where patient_id='$patient_id' and case_id='$case_id'");
-  $dbh->do("delete var_type where patient_id='$patient_id' and case_id='$case_id'");
-  $dbh->do("delete var_fusion where patient_id='$patient_id' and case_id='$case_id'");
-  $dbh->do("delete var_qc where patient_id='$patient_id' and case_id='$case_id'");
-  $dbh->do("delete var_qci_annotation where patient_id='$patient_id' and case_id='$case_id'");
-  $dbh->do("delete var_qci_summary where patient_id='$patient_id' and case_id='$case_id'");
-  $dbh->do("delete mutation_burden where patient_id='$patient_id' and case_id='$case_id'");
-  $dbh->do("delete neo_antigen where patient_id='$patient_id' and case_id='$case_id'");
-  $dbh->do("delete mixcr_summary where patient_id='$patient_id' and case_id='$case_id'");
-  $dbh->do("delete mixcr where patient_id='$patient_id' and case_id='$case_id'");
-  $dbh->do("delete var_cnv where patient_id='$patient_id' and case_id='$case_id'");
-  $dbh->do("delete var_cnvkit where patient_id='$patient_id' and case_id='$case_id'");
-  $dbh->do("delete var_tier where patient_id='$patient_id' and case_id='$case_id'");
-  $dbh->do("delete var_tier_avia where patient_id='$patient_id' and case_id='$case_id'");  
+  $dbh->do("delete from var_samples where patient_id='$patient_id' and case_id='$case_id'");
+  $dbh->do("delete from var_type where patient_id='$patient_id' and case_id='$case_id'");
+  $dbh->do("delete from var_fusion where patient_id='$patient_id' and case_id='$case_id'");
+  $dbh->do("delete from var_qc where patient_id='$patient_id' and case_id='$case_id'");
+  $dbh->do("delete from var_qci_annotation where patient_id='$patient_id' and case_id='$case_id'");
+  $dbh->do("delete from var_qci_summary where patient_id='$patient_id' and case_id='$case_id'");
+  $dbh->do("delete from mutation_burden where patient_id='$patient_id' and case_id='$case_id'");
+  $dbh->do("delete from neo_antigen where patient_id='$patient_id' and case_id='$case_id'");
+  $dbh->do("delete from mixcr_summary where patient_id='$patient_id' and case_id='$case_id'");
+  $dbh->do("delete from mixcr where patient_id='$patient_id' and case_id='$case_id'");
+  #$dbh->do("delete from var_cnv where patient_id='$patient_id' and case_id='$case_id'");
+  #$dbh->do("delete from var_cnvkit where patient_id='$patient_id' and case_id='$case_id'");
+  #$dbh->do("delete from var_tier where patient_id='$patient_id' and case_id='$case_id'");
+  $dbh->do("delete from var_tier_avia where patient_id='$patient_id' and case_id='$case_id'");  
 #}
 
 my $case_folder = "$processed_data_dir/$path/$patient_id/$case_id";
@@ -102,8 +102,8 @@ if ($label_failed) {
     print_log("update processed_cases set status='failed', updated_at=CURRENT_TIMESTAMP where patient_id='$patient_id' and case_id='$case_id'");
   } 
 } else {
-    $dbh->do("delete processed_cases where patient_id='$patient_id' and case_id='$case_id'");
-    print_log("delete processed_cases where patient_id='$patient_id' and case_id='$case_id'");  
+    $dbh->do("delete from processed_cases where patient_id='$patient_id' and case_id='$case_id'");
+    print_log("delete from processed_cases where patient_id='$patient_id' and case_id='$case_id'");  
 }
 
 $dbh->commit();
