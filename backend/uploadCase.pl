@@ -149,8 +149,8 @@ my $sth_mutation_burden = $dbh->prepare("insert into mutation_burden values(?,?,
 my $sth_mixcr_summary = $dbh->prepare("insert into mixcr_summary values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 my $sth_mixcr = $dbh->prepare("insert into mixcr values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 my $sth_neo_antigen = $dbh->prepare("insert into neo_antigen values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-my $stn_del_noncoding = $dbh->prepare("delete v from $var_sample_tbl v where patient_id=? and case_id=? and exists(select * from hg19_annot\@pub_lnk a where SUBSTR(v.chromosome,4) = a.chr and v.start_pos=a.query_start and v.end_pos=a.query_end and v.ref=a.allele1 and v.alt=a.allele2 and (maf > 0.05 or annovar_annot not in ('exonic','splicing','exonic;splicing')))");
-my $stn_rnaseqfp_avia = $dbh->prepare("delete t from var_tier_avia t where type='rnaseq' and exists(select * from rnaseq_fp r where t.chromosome=r.chromosome and t.start_pos=r.start_pos and t.end_pos=r.end_pos and t.ref=r.ref and t.alt=r.alt)");
+my $stn_del_noncoding = $dbh->prepare("delete from $var_sample_tbl v where patient_id=? and case_id=? and exists(select * from hg19_annot\@pub_lnk a where SUBSTR(v.chromosome,4) = a.chr and v.start_pos=a.query_start and v.end_pos=a.query_end and v.ref=a.allele1 and v.alt=a.allele2 and (maf > 0.05 or annovar_annot not in ('exonic','splicing','exonic;splicing')))");
+my $stn_rnaseqfp_avia = $dbh->prepare("delete from var_tier_avia t where type='rnaseq' and exists(select * from rnaseq_fp r where t.chromosome=r.chromosome and t.start_pos=r.start_pos and t.end_pos=r.end_pos and t.ref=r.ref and t.alt=r.alt)");
 
 my $sth_update_smp_exp_cov = $dbh->prepare("update $var_sample_tbl v1 
 	set (matched_var_cov, matched_total_cov) = (select var_cov, total_cov from $var_sample_tbl v2 where
@@ -454,7 +454,7 @@ foreach my $patient_dir (@patient_dirs) {
 			chomp $genome_version;
 			my $convert_time_fun = "TO_TIMESTAMP";
 			my $date_format = "YYYY-MM-DD HH24:MI:SS";
-			if ($db_type == "mysql") {
+			if ($db_type eq "mysql") {
 				$convert_time_fun = "STR_TO_DATE";
 				$date_format = "%Y-%m-%d %H:%i:%i";
 			}		

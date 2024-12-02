@@ -90,10 +90,10 @@ select distinct id,name,description,ispublic,patients,cases,samples,processed_pa
                   (select count(distinct case_id) from project_processed_cases s where p1.id=s.project_id) as processed_cases,
                   version,
           (select count(distinct c1.patient_id) from project_patients c1, patient_details c2 where p1.id=c1.project_id and c1.patient_id=c2.patient_id and class='overall_survival') as survival,
-          (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='exome') as exome,
-          (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='panel') as panel,
-          (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='rnaseq') as rnaseq,
-          (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='whole genome') as whole_genome,
+          (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='Exome') as exome,
+          (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='Panel') as panel,
+          (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='RNAseq') as rnaseq,
+          (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='Whole Genome') as whole_genome,
           status, p1.user_id, u.email as created_by, p1.updated_at
            from projects p1 left join users u on p1.user_id=u.id,project_samples p2 where p1.id=p2.project_id) projects where (rnaseq is not null or whole_genome is not null or exome is not null or panel is not null or panel is not null or whole_genome is not null);
 end
@@ -195,9 +195,9 @@ end
 #  group by project_id, gene, aa_site, type;
 #end
 my $var_aa_cohort_oc = <<'end';
-select project_id, gene, canonicalprotpos as aa_site, p1.type, count(distinct p1.patient_id) from 
+select project_id, gene, canonicalprotpos as aa_site, p1.type, count(distinct p1.patient_id) as cnt from 
 var_sample_avia_oc p1, project_patients p2 where p1.patient_id=p2.patient_id   
-group by project_id, gene, aa_site, type;
+group by project_id, gene, canonicalprotpos, type;
 end
 my $var_diagnosis_aa_cohort = <<'end';
 select project_id, diagnosis, gene, aa_site, type,count(patient_id) as cnt from (select distinct project_id, p2.diagnosis, p2.patient_id,
@@ -245,9 +245,11 @@ my $var_top20_mysql = <<'END';
 (select * from (select gene, count(distinct patient_id) as patient_count, 'somatic' as type from var_genes where type='somatic' and gene is not null group by gene order by patient_count desc ) s limit 20);
 END
 my $var_samples_tmp = <<'end';
-select v.*,c.genome_version from processed_cases c, var_samples v left join var_sample_avia_oc a on (
+(select v.*,c.genome_version from processed_cases c, var_samples v left join var_sample_avia_oc a on (
 v.patient_id=a.patient_id and v.case_id=a.case_id and v.sample_id=a.sample_id and v.type=a.type and v.chromosome=a.chromosome and v.start_pos=a.start_pos and v.end_pos=a.end_pos and v.ref=a.ref and v.alt=a.alt )
-where v.patient_id=c.patient_id and v.case_id=c.case_id and a.patient_id is null
+where v.patient_id=c.patient_id and v.case_id=c.case_id and a.patient_id is null) union (select v.*,'hg19' as genome_version from var_upload_details v left join var_sample_avia_oc a on (
+v.patient_id=a.patient_id and v.case_id=a.case_id and v.sample_id=a.sample_id and v.type=a.type and v.chromosome=a.chromosome and v.start_pos=a.start_pos and v.end_pos=a.end_pos and v.ref=a.ref and v.alt=a.alt )
+where a.patient_id is null) 
 end
 my $project_fusion = <<'END';
 select left_chr, left_gene, right_chr, right_gene, substr(var_level,1,1) as var_level, project_id,count(distinct v.patient_id) as count from var_fusion v, project_cases p 

@@ -2,6 +2,7 @@
 use warnings;
 use strict;
 use File::Basename;
+use File::Temp qw/ tempfile tempdir /;
 use List::Util qw(first);
 use 5.010;
 local $SIG{__WARN__} = sub {
@@ -18,13 +19,10 @@ local $SIG{__WARN__} = sub {
 #
 #####################################################
 # Take Temporary location from command line
-my $TEMP = $ARGV[1];
-#my $TEMP = "/scratch/";
-#my $TEMP = "/projects/scratch/";
-my $CALLER = "caller";
+my $TEMP = tempdir( CLEANUP => 1 );
+my $CALLER = "VCF4";
 my $input = "$ARGV[0]";
 my $annovar_path = "$ARGV[1]";
-my $caller_only = "$ARGV[2]";
 my $idx_normal="0";
 my $fname = basename("$input");
 my $sname = $fname;
@@ -37,9 +35,7 @@ $sname =~ s/\..*$//;
 if($sname =~ /(.*)_vs_(.*)/){
   $sname = $2;
 }
-if (!$caller_only) {
-  $caller_only = "N";
-}
+
 ############################
 #
 # load file as module instead of hard coded path 
@@ -103,10 +99,6 @@ while (<VAR>) {
 }
 close VAR;
 
-if ($caller_only eq "Y") {
-  print $CALLER;
-  exit 0;
-}
 ##############################
 #
 # Process the data and write to screen
@@ -402,9 +394,33 @@ elsif($CALLER eq 'bam2mpg'){
 # `rm -rf $TEMP/$sname.mpg 2>$TEMP/.err_$sname.mpg`;
 }
 else{
-  print STDERR "This vcf file is not supproted.\n";
-  print STDERR "Can not determine the type of VCF file\n";
-  exit $!;
+  # Other VCF4
+  #print "Other VCF4\n";
+  #print "perl $convert2annovar --format vcf4 --includeinfo $input 2>/dev/null| cut -f 1-5,11-10000 > $TEMP/$sname.vcf4 2>$TEMP/.err_$sname.vcf4\n";
+  `perl $convert2annovar --format vcf4old --includeinfo $input 2>/dev/null| cut -f 1-5,11-10000 > $TEMP/$sname.vcf4 2>$TEMP/.err_$sname.vcf4`;
+  print "Chr\tStart\tEnd\tRef\tAlt\tQUAL\tFILTER\tINFO\tSampleName";
+  foreach(@NSAMPLES){
+    print "\t$_.GT\tTotalCoverage\tRefCoverage\tVarCoverage\tVariant Allele Freq";
+  }
+  print "\n";
+  unless (open(FH, "$TEMP/$sname.vcf4")){
+    print STDERR "can not open file $TEMP/$sname.vcf4\n";
+    die;
+  }
+  while(<FH>){
+    chomp;
+    my ($chr, $start, $end, $ref, $alt, $qual, $filter, $info, $format, @samples) = split("\t", $_);
+    if($qual =~ /\d+/ and $qual >=0){
+      print "$chr\t$start\t$end\t$ref\t$alt\t$qual\t$filter\t$info\t$sname";
+      foreach (@samples){
+        my @out = Other($format, $_);
+        print "\t$out[0]\t$out[1]\t$out[2]\t$out[3]\t$out[4]";
+      }
+      print "\n"
+    }
+  }
+  close FH;
+# `rm -rf $TEMP/$sname.mpg 2>$TEMP/.err_$sname.mpg`;
 }
 
 
@@ -431,6 +447,43 @@ sub VARSCAN_S{
   $arr[$idx_FREQ] =~ s/%//g;
   return($arr[$idx_GT], $arr[$idx_DP], $arr[$idx_RD], $arr[$idx_AD], ($arr[$idx_FREQ]/100));
 }
+
+sub Other{
+  my ($form, $sample) = @_;
+  my @format =  split(":", $form);
+  if($sample =~ /^\.\/\.$/){
+                return (0, 0, 0, 0, 0);
+  }
+  my @arr = split(":", $sample);
+  my $vaf = 0;
+  my $idx_GT = first { $format[$_] eq 'GT' } 0..$#format;
+  my $idx_AD = first { $format[$_] eq 'AD' } 0..$#format;
+  my $idx_DP = first { $format[$_] eq 'DP' } 0..$#format;
+  my $idx_VF = first { $format[$_] eq 'VF' } 0..$#format;
+  if(defined $idx_GT and defined $idx_AD){
+    my @AD = split(",", $arr[$idx_AD]);
+    my $total = 0;
+    if (defined $idx_DP and $arr[$idx_DP] >=1) {
+      $total = $arr[$idx_DP];
+    } else {
+      foreach my $_ad (@AD) {
+        $total += $_ad;
+      }
+    }
+    if($#AD >= 1){
+      my $alt_count = $AD[1];
+      my $ref_count = $AD[0];
+      #if (defined $idx_VF) {
+      #  $vaf = sprintf("%.2f", $arr[$idx_VF] );
+      #} else {
+        $vaf = sprintf("%.2f", $alt_count/$total );
+      #}
+      return($arr[$idx_GT], $total, $ref_count, $alt_count, $vaf);
+    }
+  }
+  return($sample, -1, -1, -1, -1);
+}
+
 sub GATK{
   my ($form, $sample) = @_;
   my @format =  split(":", $form);

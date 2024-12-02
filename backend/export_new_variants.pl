@@ -31,7 +31,7 @@ __EOUSAGE__
 
 
 GetOptions (
-	't=s' => \$table_name,
+  't=s' => \$table_name,
   'f=s' => \$failed_file,
   'o=s' => \$out_file
 );
@@ -54,14 +54,14 @@ while(<FAILED_FILE>) {
 }
 
 print_log("Exporting to $out_file on $host ($sid)");
-my $sql = "select distinct chromosome,start_pos,end_pos,ref,alt from var_samples v where not exists(select * from $table_name a where v.chromosome=a.chr and v.start_pos=a.query_start and v.end_pos=a.query_end and v.ref=a.allele1 and v.alt=a.allele2) order by chromosome,start_pos,end_pos";
+my $sql = "select distinct * from (select distinct chromosome,start_pos,end_pos,ref,alt from var_samples v where not exists(select * from $table_name a where v.chromosome=a.chr and v.start_pos=a.query_start and v.end_pos=a.query_end and v.ref=a.allele1 and v.alt=a.allele2) union select distinct chromosome,start_pos,end_pos,ref,alt from var_upload_details v where not exists(select * from $table_name a where v.chromosome=a.chr and v.start_pos=a.query_start and v.end_pos=a.query_end and v.ref=a.allele1 and v.alt=a.allele2)) u order by chromosome,start_pos,end_pos";
 my $sth_novel = $dbh->prepare($sql);
 $sth_novel->execute();
 open(OUT_FILE, ">$out_file") or die "Cannot open file $out_file";
 while (my @row = $sth_novel->fetchrow_array) {
   my $key = $row[0].":".$row[1];
   if (!exists $failed_vars{$key}) {
-	 print OUT_FILE join("\t",@row)."\n";
+   print OUT_FILE join("\t",@row)."\n";
   } 
 }
 close(OUT_FILE);

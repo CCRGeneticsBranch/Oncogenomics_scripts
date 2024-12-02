@@ -6,12 +6,12 @@ use Getopt::Long qw(GetOptions);
 sub getDBI {
   my ($db_type, $host, $sid, $username, $passwd, $port) = getDBConfig();
   my $dbh;
-  #print "$db_type\n";
+  print "db_type: $db_type\n";
   if ($db_type eq "oracle") {  
     $dbh = DBI->connect( "dbi:Oracle:host=$host;port=$port;sid=$sid", $username, $passwd, {
       AutoCommit => 0,
       RaiseError => 1,    
-    }) || die( $DBI::errstr . "\n" );
+    }) || die sprintf( 'connect() failed. Error: %s', DBI->errstr);
   }
   if ($db_type eq "mysql") {  
     $dbh = DBI->connect( "dbi:mysql:$sid:$host", $username, $passwd, {
@@ -98,7 +98,7 @@ sub getDBConfig {
         if ($key eq "DB_PORT") {
           $port = $value;
         }
-        if ($host ne "" && $sid ne "" && $username ne "" && $passwd ne "" && $port ne "") {
+        if ($db_type ne "" && $host ne "" && $sid ne "" && $username ne "" && $passwd ne "" && $port ne "") {
           return ($db_type, $host, $sid, $username, $passwd, $port);
         }   
   }

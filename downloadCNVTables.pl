@@ -86,6 +86,7 @@ while (my ($patient_id, $case_id, $sample_id) = $sth_cnv->fetchrow_array) {
   my $out_file_tmp = "$out_dir/$project_id/cnv/$patient_id-$case_id-$sample_id.$type.tmp";
   my $out_file = "$out_dir/$project_id/cnv/$patient_id-$case_id-$sample_id.$type.txt";
   #system("curl -X POST -F patient_id=$patient_id -F case_id=$case_id -F sample_id=$sample_id -F source=$type $url > $out_file_tmp");
+  print("curl $url/$token/$patient_id/$case_id/$sample_id/$type > $out_file_tmp\n");
   system("curl $url/$token/$patient_id/$case_id/$sample_id/$type > $out_file_tmp");
   if ($type eq "sequenza") {
     system("echo -e '".$patient_id."\\t".$case_id."\\t".$sample_id."\\t\\c' >> $summary_file");
