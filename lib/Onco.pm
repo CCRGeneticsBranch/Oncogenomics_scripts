@@ -48,6 +48,10 @@ sub print_log {
 
 sub getConfig {
   my ($key) = @_;
+  if ($ENV{$key}) {
+    return $ENV{$key};
+  }
+
   my $script_dir = dirname(__FILE__);
   #print("using env file: $script_dir/../../../.env");
   my $config_refs = _getConfig("$script_dir/../../../.env");
@@ -69,6 +73,9 @@ sub formatDir {
 }
 
 sub getDBConfig {
+  if ($ENV{DB_CONNECTION} && $ENV{DB_HOST} && $ENV{DB_DATABASE} && $ENV{DB_USERNAME} && $ENV{DB_PASSWORD} && $ENV{DB_PORT}) {
+    return ($ENV{DB_CONNECTION}, $ENV{DB_HOST}, $ENV{DB_DATABASE},$ENV{DB_USERNAME},$ENV{DB_PASSWORD},$ENV{DB_PORT});
+  }
   my $script_dir = dirname(__FILE__);
   my $config_refs = _getConfig("$script_dir/../../../.env");
   my %configs = %$config_refs;

@@ -31,6 +31,7 @@ my $app_path = abs_path($script_dir."/../../..");
 my $target_patient;
 my $target_case;
 my $url = getConfig("URL");
+my $web_user = getConfig("WEB_USER");
 my $production_url = getConfig("URL_PRODUCTION");
 my $db_name = "development";
 my $update_list_file;
@@ -42,7 +43,7 @@ my $use_sqlldr = 0;
 my $remove_noncoding = 0;
 my $refresh_exp = 0;
 my $case_name_eq_id = 0;
-my $email = "";
+my $email = getConfig("EMAILS");
 my $dir_example = abs_path("$app_path/storage/ProcessedResults/processed_DATA");
 my $dir;
 my $project_folder_desc;
@@ -149,6 +150,7 @@ my $sth_mutation_burden = $dbh->prepare("insert into mutation_burden values(?,?,
 my $sth_mixcr_summary = $dbh->prepare("insert into mixcr_summary values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 my $sth_mixcr = $dbh->prepare("insert into mixcr values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 my $sth_neo_antigen = $dbh->prepare("insert into neo_antigen values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+my $sth_hla = $dbh->prepare("insert into hla values(?,?,?,?,?,?)");
 my $stn_del_noncoding = $dbh->prepare("delete from $var_sample_tbl v where patient_id=? and case_id=? and exists(select * from hg19_annot\@pub_lnk a where SUBSTR(v.chromosome,4) = a.chr and v.start_pos=a.query_start and v.end_pos=a.query_end and v.ref=a.allele1 and v.alt=a.allele2 and (maf > 0.05 or annovar_annot not in ('exonic','splicing','exonic;splicing')))");
 my $stn_rnaseqfp_avia = $dbh->prepare("delete from var_tier_avia t where type='rnaseq' and exists(select * from rnaseq_fp r where t.chromosome=r.chromosome and t.start_pos=r.start_pos and t.end_pos=r.end_pos and t.ref=r.ref and t.alt=r.alt)");
 
@@ -660,7 +662,9 @@ foreach my $patient_dir (@patient_dirs) {
 				};
 			}
 		}
-		#process RNA QC	V2	
+		#process RNA QC	V2
+
+=pod	
 		$qc_file = "qc/rnaseqc/metrics.tsv";
 		opendir( my $DIR, $dir."$patient_id/$case_id" );
 		while ( my $entry = readdir $DIR ) {
@@ -677,6 +681,17 @@ foreach my $patient_dir (@patient_dirs) {
 				}
 
     		}
+		}
+=cut
+		my @qc_files = glob "$dir/$patient_id/$case_id/*/qc/*rnaseqc/metrics.tsv";
+		foreach my $qc_file(@qc_files) {
+			if ($load_type eq "all" || $load_type eq "qc" || $load_type eq "variants") {
+					try {
+						&insertQC($case_id, $patient_id, $qc_file, "rnaV2");				
+					} catch {
+						push(@errors, "$patient_id\t$case_id\tQC-RNAV2\t$_");
+					};
+			}
 		}
 
 		#process CNV
@@ -775,6 +790,27 @@ foreach my $patient_dir (@patient_dirs) {
 			}
 		}
 
+		#process HLA
+		if ($load_type eq "all" || $load_type eq "hla") {
+			my @sample_dirs = grep { -d } glob $case_dir."*";
+			my $inserted = 0;
+			foreach my $d (@sample_dirs) {
+				$d = &formatDir($d);
+				my $folder_name = basename($d);				
+				try {					
+					my $ret = &insertHLA($dir, $folder_name, $patient_id, $case_id);
+					if ($ret) {
+						$inserted = 1;
+					}
+				} catch {
+					push(@errors, "$patient_id\t$case_id\tHLA\t$_");
+				};				
+			}	
+			if ($inserted) {
+				$new_data{$patient_key}{'hla'} = '';
+			}
+		}
+
 		#check Mixcr
 		if ($load_type eq "all" || $load_type eq "mixcr") {
 			my @mix_dirs = grep { -d } glob $case_dir."*";
@@ -826,7 +862,7 @@ foreach my $patient_dir (@patient_dirs) {
 					my $filter_cmd = "perl ${script_dir}/filterRSEM.pl $rsem_file > $rsem_filtered_file";
 					#print("$filter_cmd\n");
 					system($filter_cmd);
-					system("chgrp -f ncif-www-onc-grp $rsem_filtered_file;chmod -f 770 $rsem_filtered_file");
+					system("chgrp -f $web_user $rsem_filtered_file;chmod -f 770 $rsem_filtered_file");
 				}
 			}
 		}
@@ -972,6 +1008,7 @@ sub insertQCI {
 		chomp;
 		my @fields = split(/\t/);		
 		if ($#fields == 6) {
+			print("$_\n");
 			next if ($fields[0] eq "Chromosome");
 			my ($chr, $pos, $ass, $ref, $alt, $act, $nooact) = @fields;
 			$sth_var_qci_annotation->execute($patient_id, $case_id, $sample_id, $type, $chr, $pos, $ref, $alt, $ass, $act, $nooact);
@@ -1076,6 +1113,40 @@ sub insertNeoAntigen {
 	}
 	close(INFILE);
 	close(ANTIGEN_FILE);
+	#push(@errors, "$patient_id\t$case_id\tNeoAntigen\tSQLLoader");
+	return 1;
+}
+
+sub insertHLA {
+	my ($dir, $folder_name, $patient_id, $case_id) = @_;	
+	my $filename = $dir.$patient_id."/$case_id/$folder_name/HLA/$folder_name.Calls.txt";
+	#print $filename."\n";
+	if (!-e $filename) {
+		return 0;
+	}
+	my $sample_id = $folder_name;
+	$sample_id =~ s/Sample_//;
+	if (exists $sample_alias{$sample_id}) {
+		$sample_id = $sample_alias{$sample_id};
+	}
+	open (INFILE, "$filename") or return;
+	print_log("processing HLA");
+	$dbh->do("delete from hla where case_id = '$case_id' and patient_id = '$patient_id' and sample_id = '$sample_id'");
+	$dbh->commit();
+
+	open(INFILE, "$filename") or die "Cannot open file $filename";
+	my $line = <INFILE>;
+	chomp $line;
+	my @headers = split(/\t/, $line);
+	while(<INFILE>) {
+		chomp;
+		my @data_to_insert = split(/\t/);
+		next if ($#data_to_insert != $#headers);
+		for (my $i=1; $i<=$#data_to_insert;$i++) {
+			$sth_hla->execute($patient_id, $case_id, $sample_id, $data_to_insert[0], $headers[$i], $data_to_insert[$i]);
+		}
+	}
+	close(INFILE);
 	#push(@errors, "$patient_id\t$case_id\tNeoAntigen\tSQLLoader");
 	return 1;
 }
@@ -1245,7 +1316,7 @@ sub insertCNV {
 		$dbh->commit();
 	}
 
-	system("chgrp -f ncif-www-onc-grp $cnv_dir/*;chmod -f 770 $cnv_dir/*");
+	system("chgrp -f $web_user $cnv_dir/*;chmod -f 770 $cnv_dir/*");
 	return 1;	
 }
 
@@ -1288,7 +1359,7 @@ sub insertCNVKit {
 		$sth_cnvkit->execute($patient_id, $case_id, $sample_id, $chr, $start_pos, $end_pos, $log2, $depth, $probes, $weight);		
 	}
 	$dbh->commit();
-	system("$script_dir/run_reconCNV.sh $ratio_filename");
+	system("$script_dir/run_reconCNV.sh $ratio_filename $filename");
 	system("$script_dir/gen_cnvkit_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed $segment_file_type");
 	if ( -e $gene_segment_filename) {
 		open (GENE_SEG_FILE, "$gene_segment_filename");
@@ -1307,7 +1378,7 @@ sub insertCNVKit {
 		close(GENE_SEG_FILE);
 		$dbh->commit();
 	}
-	system("chgrp -f ncif-www-onc-grp $cnv_dir/*;chmod -f 770 $cnv_dir/*");
+	system("chgrp -f $web_user $cnv_dir/*;chmod -f 770 $cnv_dir/*");
 	return 1;
 }
 

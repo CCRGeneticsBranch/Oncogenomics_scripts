@@ -7,7 +7,7 @@ E_BADARGS=65
 export PATH=/mnt/nasapps/development/perl/5.28.1/bin:$PATH
 if [ $# -ne $EXPECTED_ARGS ]
 then
-	echo "Usage: `basename $0` {target project} {process type: db/tier/bam} {production/development/public/all}"
+	echo "Usage: `basename $0` {target project} {process type: db/tier/bam} {production/development/public}"
 	exit $E_BADARGS
 fi
 
@@ -163,7 +163,7 @@ done < $project_file
 if [ "$target_type" == "db" ];then
 	echo [`date +"%Y-%m-%d %H:%M:%S"`] "exporting new variants" >> ${log_file}
 	LC_ALL="en_US.utf8" ${script_home}/export_new_variants.pl -o  ${home}/avia/hg19/new_variants.tsv >> ${log_file}	
-	echo [`date +"%Y-%m-%d %H:%M:%S"`] "refreshing views -c" >> ${log_file}
+	echo [`date +"%Y-%m-%d %H:%M:%S"`] "refreshing views -c -h" >> ${log_file}
 	LC_ALL="en_US.utf8" ${script_home}/refreshViews.pl -c -h >> ${log_file}
 	echo [`date +"%Y-%m-%d %H:%M:%S"`] "updateing case name/ID" >> ${log_file}
 	LC_ALL="en_US.utf8" ${script_home}/updateVarCases.pl >> ${log_file}	

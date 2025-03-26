@@ -13,6 +13,7 @@ my $do_prj_summary = 0;
 my $do_avia = 0;
 my $do_avia_full = 0;
 my $do_cohort = 0;
+my $do_genotyping = 0;
 my $show_sql = 0;
 
 my $usage = <<__eousage__;
@@ -29,6 +30,7 @@ options:
   -v            refresh avia views
   -f            refresh full avia views
   -h            refresh cohort views
+  -t            refresh genotyping views
   -s            show sql statement
   
 __eousage__
@@ -42,6 +44,7 @@ GetOptions (
   'v' => \$do_avia,
   'f' => \$do_avia_full,
   'h' => \$do_cohort,
+  't' => \$do_genotyping,
   's' => \$show_sql
 );
 
@@ -126,6 +129,9 @@ union
 (select  p.id as project_id, p.name as project_name, u.user_id as user_id,p.ispublic from users_permissions u, projects p where u.perm='_superadmin')
 ) u;
 end
+my $project_var_count = <<'end';
+select project_id, count(*) as cnt,type from var_samples v, project_samples p where p.patient_id=v.patient_id and v.sample_id=p.sample_id group by project_id,type order by type;
+end
 my $var_cases = <<'end';
   select distinct v.*,c.path,c.case_name from var_type v,cases c where v.patient_id=c.patient_id and v.case_id=c.case_id;
 end
@@ -156,6 +162,9 @@ v.patient_id=c.patient_id and
 v.case_id=c.case_id and 
 v.sample_id=s.sample_id and
 c.genome_version='hg38';
+end
+my $project_genotyping = <<'end';
+select distinct project_id,patient_id,diagnosis from project_samples p,genotyping g where (p.sample_id=g.sample1 or p.sample_id=g.sample2 or p.sample_name=g.sample1 or p.sample_name=g.sample2);
 end
 my $var_cnvkit_genes_hg19 = <<'end';
 select v.*, g.symbol as gene, c.case_name,s.sample_name 
@@ -194,6 +203,11 @@ end
 #  p1.patient_id=p2.patient_id) co
 #  group by project_id, gene, aa_site, type;
 #end
+my $var_qci_cohort = <<'end';
+select p.project_id,q.type,gene,q.qci_assessment,q.qci_actionability,count(distinct q.patient_id) as patient_count from var_qci_annotation q,var_sample_avia_oc a,project_cases p 
+where q.patient_id=p.patient_id and q.case_id=p.case_id and q.patient_id=a.patient_id and q.case_id=a.case_id and q.chromosome=a.chromosome and q.position=a.start_pos and q.ref not in ('fusion','rearrangement','gene_rearrangement') 
+group by p.project_id,q.type,gene,qci_assessment,q.qci_actionability;
+end
 my $var_aa_cohort_oc = <<'end';
 select project_id, gene, canonicalprotpos as aa_site, p1.type, count(distinct p1.patient_id) as cnt from 
 var_sample_avia_oc p1, project_patients p2 where p1.patient_id=p2.patient_id   
@@ -326,7 +340,7 @@ my %var_sample_avia_oc_indexes = ( "var_samle_avia_oc_coord" => "chromosome, sta
 
 #print "$cases\n$fusion_count\n$processed_sample_cases\n";
 
-if (!$refresh_all && !$do_cnv && !$do_prj_summary && !$do_avia && !$do_avia_full && !$do_cohort) {
+if (!$refresh_all && !$do_cnv && !$do_prj_summary && !$do_avia && !$do_avia_full && !$do_cohort && !$do_genotyping) {
     die "please specifiy options!\n$usage";
 }
 
@@ -349,7 +363,8 @@ if ($refresh_all || $do_prj_summary) {
   do_insert('project_patient_summary', $project_patient_summary, 1);
   do_insert('project_sample_summary', $project_sample_summary, 1);
   do_insert('user_projects', $user_projects, 1);
-  do_insert('fusion_count', $fusion_count, 1);  
+  do_insert('fusion_count', $fusion_count, 1);
+  do_insert('project_var_count', $project_var_count, 1);  
   do_insert('project_mview', $project_mview, 1);
 }
 
@@ -374,8 +389,13 @@ if ((1==2) && ($refresh_all || $do_cnv)) {
   do_insert('var_cnvkit_genes', $var_cnvkit_genes_hg38, 0, \%var_cnvkit_genes_indexes);
 }
 
+if ($refresh_all || $do_genotyping) {
+  do_insert('project_genotyping', $project_genotyping, 1);
+}
+
 if ($refresh_all || $do_cohort) {
   print_log("Refrshing cohort views...on $sid");
+  do_insert('var_qci_cohort', $var_qci_cohort, 1);
   do_create('var_aa_cohort_oc', $var_aa_cohort_oc, \%var_aa_cohort_oc_indexes);
   do_create('var_genes', $var_genes, \%var_genes_indexes);
   do_insert('var_count', $var_count, 1);
