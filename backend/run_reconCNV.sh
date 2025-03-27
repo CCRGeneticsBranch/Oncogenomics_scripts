@@ -25,7 +25,7 @@ if [ ! -f ${bn}.html ];then
 		awk -v chr="$chr" '$1==chr || $1=="chromosome"' $cns > ${chr_cns}
 		awk -v chr="$chr" '$1==chr || $1=="chromosome"' ${genome_len} > ${chr_len}
 		#echo "python ${reconCNV_home}/reconCNV.py -r ${chr_cnr} -g ${chr_cnr} -x ${reconCNV_home}/data/hg19_genome_length_chr.txt -a ${chr_len} -s ${chr_cns} -c ${reconCNV_home}/config.json -o ${bn}.${chr}.html -d $dn"
-		python ${RECONCNV_PATH}/RECONCNV_PATH.py -r ${chr_cnr} -g ${chr_cnr} -x ${chr_len} -a ${RECONCNV_PATH}/data/annotation/hg19/${chr}.annotation.txt -s ${chr_cns} -c ${RECONCNV_PATH}/config.json -o ${bn}.${chr}.html -d $dn
+		python ${RECONCNV_PATH}/reconCNV.py -r ${chr_cnr} -g ${chr_cnr} -x ${chr_len} -a ${RECONCNV_PATH}/data/annotation/hg19/${chr}.annotation.txt -s ${chr_cns} -c ${RECONCNV_PATH}/config.json -o ${bn}.${chr}.html -d $dn
 		#python ${reconCNV_home}/reconCNV.py -r ${cleaned_cnr} -g ${cleaned_cnr} -x ${reconCNV_home}/data/hg19_genome_length_chr.txt -a ${reconCNV_home}/data/hg19_COSMIC_genes_model_chr.txt -s ${bn}.cns -c ${reconCNV_home}/config.json -o ${bn}.html -d $dn
 	done
 fi

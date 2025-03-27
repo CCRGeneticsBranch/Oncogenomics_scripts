@@ -40,7 +40,7 @@ my $dbh = getDBI();
 
 my $sth_read_cases = $dbh->prepare("select patient_id, case_id, version, path from processed_cases where status <> 'not_successful'");
 #my $sth_var_samples = $dbh->prepare("select distinct patient_id, case_id, sample_id from var_samples");
-my $sth_var_samples = $dbh->prepare("select distinct * from (select distinct patient_id, case_id, sample_id from var_samples union select distinct patient_id, case_id, sample_id from var_qc)");
+my $sth_var_samples = $dbh->prepare("select distinct * from (select distinct patient_id, case_id, sample_id from var_samples union select distinct patient_id, case_id, sample_id from var_qc) s");
 my $sth_sample_cases = $dbh->prepare("select distinct patient_id, case_name, sample_id from sample_cases where exp_type <> 'Methylseq'");
 my $sth_write_cases = $dbh->prepare("update sample_case_mapping set case_id=?, match_type=? where case_name=? and patient_id=?");
 my $sth_orphan_cases = $dbh->prepare("select patient_id,case_id,path from processed_cases p where not exists(select * from sample_case_mapping c where p.patient_id=c.patient_id and p.case_id=c.case_id) order by patient_id,case_id");
