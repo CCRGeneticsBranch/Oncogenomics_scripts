@@ -32,7 +32,6 @@ my $target_patient;
 my $target_case;
 my $url = getConfig("URL");
 my $web_user = getConfig("WEB_USER");
-my $production_url = getConfig("URL_PRODUCTION");
 my $db_name = "development";
 my $update_list_file;
 my $skip_fusion = 0;
@@ -471,7 +470,7 @@ foreach my $patient_dir (@patient_dirs) {
 			$dbh->commit();			
 		}
 		
-		my $patient_link = "<a target=_blank href='$production_url/viewPatient/any/$patient_id'>$patient_id</a>";
+		my $patient_link = "<a target=_blank href='$url/viewPatient/any/$patient_id'>$patient_id</a>";
 		my $patient_key = "$patient_link\t$case_id\t$diagnosis";
 
 		#process fusion		
