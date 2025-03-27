@@ -20,3 +20,8 @@ stat -c "%n %Y" ${data_dir}/*/*/successful.txt > $today
 stat -c "%n %Y" ${data_dir}/*/*/failed_delete.txt >> $today
 grep -Fvxf ${yesterday} ${today} | cut -d' ' -f1 | rev | cut -d'/' -f 1-3 | rev >${new}
 ${script_home}/uploadCase.pl -i $data_dir -l $new -d $project >> $log_file
+${script_home}/updateVarCases.pl >> $log_file
+${script_home}/export_new_variants.pl -o  ${home}/site_data/avia/hg19/new_variants.tsv >> ${log_file}
+${script_home}/refreshViews.pl -p -c -h >> ${log_file}
+${script_home}/../preprocessProjectMaster.pl -p $new -e $EMAILS -u $URL -m -g -c
+${update_list} $emails $url

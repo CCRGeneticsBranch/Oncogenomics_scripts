@@ -32,6 +32,8 @@ my $target_patient;
 my $target_case;
 my $url = getConfig("URL");
 my $web_user = getConfig("WEB_USER");
+my $conda_path = getConfig("CONDA_PATH");
+my $reconCNV_path = getConfig("RECONCNV_PATH");
 my $db_name = "development";
 my $update_list_file;
 my $skip_fusion = 0;
@@ -1358,7 +1360,7 @@ sub insertCNVKit {
 		$sth_cnvkit->execute($patient_id, $case_id, $sample_id, $chr, $start_pos, $end_pos, $log2, $depth, $probes, $weight);		
 	}
 	$dbh->commit();
-	system("$script_dir/run_reconCNV.sh $ratio_filename $filename");
+	system("export CONDA_PATH=$conda_path;export RECONCNV_PATH=$reconCNV_path;$script_dir/run_reconCNV.sh $ratio_filename $filename");
 	system("$script_dir/gen_cnvkit_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed $segment_file_type");
 	if ( -e $gene_segment_filename) {
 		open (GENE_SEG_FILE, "$gene_segment_filename");
