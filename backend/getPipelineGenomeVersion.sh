@@ -1,3 +1,4 @@
+#!/bin/bash
 case_dir=$1
 version="hg19"
 qc_file=`ls -ltr ${case_dir}/qc/*.config*.txt 2> /dev/null | tail -1 | perl -pe 's/.*qc\/(.*)/$1/'`

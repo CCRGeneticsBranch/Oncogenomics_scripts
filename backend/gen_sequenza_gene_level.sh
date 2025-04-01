@@ -1,5 +1,8 @@
 #!/bin/env bash
-module load bedtools
+
+if [[ "$BEDTOOLS_MODULE" ]];then
+	module load $BEDTOOLS_MODULE;
+fi
 
 #example
 # ./gen_sequenza_gene_level.sh /mnt/projects/CCR-JK-oncogenomics/static/site_data/prod/storage/ProcessedResults/compass_exome/CP11246/MD-23-3075/CP11246_T2D_E/sequenza/CP11246_T2D_E/CP11246_T2D_E_segments.txt /mnt/projects/CCR-JK-oncogenomics/static/ref/hg19.genes.coding.bed

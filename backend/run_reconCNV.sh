@@ -1,3 +1,4 @@
+#!/bin/bash
 in=$1
 cns=$2
 bn="${in%.*}"
