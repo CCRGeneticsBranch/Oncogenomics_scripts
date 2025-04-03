@@ -29,10 +29,12 @@ required options:
   -m  <string>  matrix file
   
 __EOUSAGE__
-my $r_path = getConfig("R_PATH");
-$ENV{'PATH'}=$r_path.$ENV{'PATH'};#Ubuntu16
-$ENV{'R_LIBS'}=getConfig("R_LIBS");#Ubuntu16
-
+my $aws = getConfig("AWS");
+if ($aws eq "false") {
+	my $r_path = getConfig("R_PATH");
+	$ENV{'PATH'}=$r_path.$ENV{'PATH'};#Ubuntu16
+	$ENV{'R_LIBS'}=getConfig("R_LIBS");#Ubuntu16
+}
 GetOptions (
   'p=i' => \$project_id,
   't=s' => \$type,
@@ -155,7 +157,7 @@ sub process {
 	$dbh->do("update projects set status=1 where id=$project_id");
 	$dbh->commit();	
 
-	my $cmd = "$r_path/Rscript $script_dir/tmmNormalize.r $exp_list_file $annotation_file $out_dir";
+	my $cmd = "Rscript $script_dir/tmmNormalize.r $exp_list_file $annotation_file $out_dir";
 	print "TMM normalizing...\n";
 	print "Command: $cmd\n";
 	if (!$dry_run) {

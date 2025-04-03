@@ -11,7 +11,9 @@ require(dirname(abs_path($0))."/lib/Onco.pm");
 
 my $project_id;
 my $email = "";
-my $url = getConfig("url");
+my $url = getConfig("URL");
+my $aws = getConfig("AWS");
+my $web_user = getConfig("WEB_USER");
 my $project_name = "";
 my $include_pub=0;
 my $download_var=0;
@@ -21,8 +23,10 @@ my $download_mixcr=0;
 my $process_gt=0;
 my $no_exp=0;
 
-$ENV{'PATH'}=getConfig("R_PATH").$ENV{'PATH'};#Ubuntu16
-$ENV{'R_LIBS'}=getConfig("R_LIBS");#Ubuntu16
+if ($aws eq "false") {
+	$ENV{'PATH'}=getConfig("R_PATH").$ENV{'PATH'};#Ubuntu16
+	$ENV{'R_LIBS'}=getConfig("R_LIBS");#Ubuntu16
+}
 
 my $script_dir = abs_path(dirname(__FILE__));
 my $app_path = abs_path($script_dir."/../..");
@@ -161,7 +165,7 @@ foreach my $pid (sort keys %projects) {
 	if ($process_gt) {
 		system("$script_dir/backend/scoreProjectGenotypes.pl -p $pid");
 	}
-	system("chgrp -f -R ncif-www-onc-grp $out_dir/$pid;chmod -f -R 770 $out_dir/$pid");
+	system("chgrp -f -R $web_user $out_dir/$pid;chmod -f -R 770 $out_dir/$pid");
 	print "Total time for project $pid: $duration s\n";
 }
 #$dbh->do("alter index project_values_pk visible");

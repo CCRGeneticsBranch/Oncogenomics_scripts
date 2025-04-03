@@ -1,7 +1,7 @@
 #!/bin/env bash
 
-if [[ "$BEDTOOLS_MODULE" ]];then
-	module load $BEDTOOLS_MODULE;
+if [[ "$AWS" == "false" ]];then
+	module load bedtools;
 fi
 
 #example

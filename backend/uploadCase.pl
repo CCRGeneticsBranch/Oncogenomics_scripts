@@ -34,7 +34,7 @@ my $url = getConfig("URL");
 my $web_user = getConfig("WEB_USER");
 my $conda_path = getConfig("CONDA_PATH");
 my $reconCNV_path = getConfig("RECONCNV_PATH");
-my $bedtools_module = getConfig("BEDTOOLS_MODULE");
+my $aws = getConfig("AWS");
 my $db_name = "development";
 my $update_list_file;
 my $skip_fusion = 0;
@@ -1278,7 +1278,7 @@ sub insertCNV {
 	$dbh->commit();
 	#system("$script_dir/run_reconCNV_sequenza.sh $filename");
 	#intersect gene file with segment
-	system("export BEDTOOLS_MODULE=$bedtools_module;$script_dir/gen_sequenza_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed");
+	system("export AWS=$aws;$script_dir/gen_sequenza_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed");
 	if ( -e $gene_segment_filename) {
 		open (GENE_SEG_FILE, "$gene_segment_filename");
 		print_log("processing sequenza gene segments: $gene_segment_filename");
@@ -1299,7 +1299,7 @@ sub insertCNV {
 		$dbh->commit();
 	}
 	#get gene level file. Generate gene level file only if the pipeline does not generate one
-	system("export BEDTOOLS_MODULE=$bedtools_module;$script_dir/gen_sequenza_gene_level.sh $filename $script_dir/../../ref/hg19.genes.coding.bed");
+	system("export AWS=$aws;$script_dir/gen_sequenza_gene_level.sh $filename $script_dir/../../ref/hg19.genes.coding.bed");
 	if ( -e $gene_level_filename) {
 		open (GENE_LEVEL_FILE, "$gene_level_filename");
 		print_log("processing sequenza gene level: $gene_level_filename");
