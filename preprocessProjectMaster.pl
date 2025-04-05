@@ -76,6 +76,7 @@ if (!$project_id) {
 
 my $dbh = getDBI();
 my $sid = getDBSID();
+my $db_type = getDBType();
 
 my %projects = ();
 if ($project_id eq "all") {
@@ -111,6 +112,7 @@ if ($project_id eq "all") {
 		while (my ($pid, $name) = $sth->fetchrow_array) {
 			$projects{$pid} = $name;
 		}
+		$sth->finish();
 	}	
 }
 
@@ -121,7 +123,12 @@ foreach my $pid (sort keys %projects) {
 	my $start = time;
 	if (! $no_exp) {
 		$dbh->do("delete from project_values where project_id=$pid");	
-		$dbh->do("update projects set status=0 where id=$pid");	
+		$dbh->do("update projects set status=0 where id=$pid");
+		if ($db_type eq "mysql") {
+			if (!$dbh->ping) {
+				$dbh = $dbh->clone() or die "Cannot connect to db";
+			}
+		}	
 		$dbh->commit();
 	}
 	my $duration = time - $start;
