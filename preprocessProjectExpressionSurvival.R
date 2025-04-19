@@ -9,7 +9,9 @@ calPvalues <- function(d, s) {
 		return(NA);
 	}
 	min_pvalue <- 100;
+	min_chisq <- 0;
 	min_cutoff <- 0;
+	min_better_group <- "NA";
 	pvalue <- vector(, length(cutoffs))
 	for (n in 1:length(cutoffs))
 	{
@@ -19,6 +21,11 @@ calPvalues <- function(d, s) {
 			if (pvalue[n] < min_pvalue) {
 				min_pvalue <- pvalue[n]
 				min_cutoff <- cutoffs[n]
+				min_chisq <- round(diff$chisq,4)
+				min_better_group <- "Low";
+				if (grepl("TRUE", names(diff$n)[diff$obs/diff$exp==min(diff$obs/diff$exp)]))
+					min_better_group <- "High";
+
 			}
 		}, error= function(e){
 			return(NA);
@@ -32,7 +39,11 @@ calPvalues <- function(d, s) {
 	med <- median(sorted_exp)
 	diff <- survdiff(s~(d > med))
 	med_pvalue <- 1 - pchisq(diff$chisq, length(diff$n) - 1)
-	return (c(round(log2(med+1),2),round(med_pvalue,4),round(log2(min_cutoff+1),2),round(min_pvalue,4)))
+	med_chisq <- round(diff$chisq,4)
+	med_better_group <- "Low";
+	if (grepl("TRUE", names(diff$n)[diff$obs/diff$exp==min(diff$obs/diff$exp)]))
+		med_better_group <- "High";
+	return (c(round(log2(med+1),2),med_chisq,med_better_group,round(med_pvalue,4),round(log2(min_cutoff+1),2),min_chisq,min_better_group,round(min_pvalue,4)))
 }
 
 
@@ -52,16 +63,18 @@ df_exp$length=NULL
 df_exp <- as.data.frame(df_exp %>% dplyr::group_by(gene_name) %>% dplyr::summarize_all(list(mean)))
 rownames(df_exp) <- df_exp$gene_name
 df_exp$gene_name <- NULL
+#df_exp <- df_exp[1:20,]
 df_exp <- as.data.frame(t(df_exp))
 df_exp$SampleID <- rownames(df_exp)
+df_surv$SampleID <- as.character(df_surv$SampleID);
 data <- df_surv %>% dplyr::inner_join(df_exp, by=c("SampleID"="SampleID"))
 
 data$Time <- as.numeric(as.character(data$Time))
 s<-Surv(data$Time, data$Status == 1)
-data <- data[,5:ncol(data)]
-pvalues <- lapply(data, calPvalues, s)
+d <- data[,5:ncol(data)]
+pvalues <- lapply(d, calPvalues, s)
 pvalues <- as.data.frame(t(as.data.frame(pvalues)))
-colnames(pvalues) <- c("median","median_pvalue","min_cutoff","min_pvalue")
+colnames(pvalues) <- c("median","median_chisq","median_better_group","median_pvalue","min_cutoff","min_chisq","min_better_group","min_pvalue")
 pvalues$FDR <- round(p.adjust(pvalues$min_pvalue, method="fdr"),4)
 write.table(pvalues, out_file, col.names=NA, row.names=T, sep="\t", quote=F)
 

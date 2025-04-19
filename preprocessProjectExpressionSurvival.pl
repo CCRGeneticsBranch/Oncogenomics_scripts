@@ -54,9 +54,9 @@ my $expression_file = "$script_dir/../../storage/project_data/$project_id/expres
 if ( -s $expression_file) {
 	foreach my $diagnosis(@diags) {
 		print("calculating $diagnosis pvalues for overall survival\n");
-		system("Rscript $script_dir/preprocessProjectExpressionSurvival.R $overall_survival_prefix.$diagnosis.tsv $expression_file $survival_dir/overall_pvalues.$diagnosis.tsv");
+		system("Rscript $script_dir/preprocessProjectExpressionSurvival.R '$overall_survival_prefix.$diagnosis.tsv' $expression_file '$survival_dir/overall_pvalues.$diagnosis.tsv'");
 		print("calculating $diagnosis pvalues for event free survival\n");
-		system("Rscript $script_dir/preprocessProjectExpressionSurvival.R $event_free_survival_prefix.$diagnosis.tsv $expression_file $survival_dir/event_free_pvalues.$diagnosis.tsv");
+		system("Rscript $script_dir/preprocessProjectExpressionSurvival.R '$event_free_survival_prefix.$diagnosis.tsv' $expression_file '$survival_dir/event_free_pvalues.$diagnosis.tsv'");
 	}
 }
 

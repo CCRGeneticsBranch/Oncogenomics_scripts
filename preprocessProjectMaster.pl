@@ -122,13 +122,11 @@ foreach my $pid (sort keys %projects) {
 	print "Clean up old data...$sid";
 	my $start = time;
 	if (! $no_exp) {
-		$dbh->do("delete from project_values where project_id=$pid");	
-		$dbh->do("update projects set status=0 where id=$pid");
-		if ($db_type eq "mysql") {
-			if (!$dbh->ping) {
+		if (!$dbh->ping) {
 				$dbh = $dbh->clone() or die "Cannot connect to db";
-			}
-		}	
+		}
+		$dbh->do("delete from project_values where project_id=$pid");	
+		$dbh->do("update projects set status=0 where id=$pid");		
 		$dbh->commit();
 	}
 	my $duration = time - $start;
@@ -151,7 +149,7 @@ foreach my $pid (sort keys %projects) {
 	#foreach my $thr(@thrs) {
 	#	$thr->join();
 	#}
-	$dbh->disconnect();
+	#$dbh->disconnect();
 
 	$duration = time - $start;
 	#make variants and VCF zip files

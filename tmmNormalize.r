@@ -209,6 +209,6 @@ for (gmt in gmts) {
   gmt_file <- paste0(out_dir, "/../../../app/ref/msigdb/", gmt)
   for (method in methods) {
     gsva_out_file <- paste0(gsva_out_dir, "/", gsub("\\.gmt", "", gmt), ".", method, ".txt")
-    runGSVA(lcpm, gmt_file, gsva_out_file, method)
+    #runGSVA(lcpm, gmt_file, gsva_out_file, method)
   }
 }

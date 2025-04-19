@@ -19,11 +19,13 @@ if (length(cutoffs) == 1) {
 	min_pvalue <- 100;
 	min_cutoff <- 0;
 	pvalue <- vector(, length(cutoffs))
+	chisq <- vector(, length(cutoffs))
 	for (n in 1:length(cutoffs))
 	{
 		res <- tryCatch({
 			diff <- survdiff(s~(data$Exp > cutoffs[n]))
 			pvalue[n] <- 1 - pchisq(diff$chisq, length(diff$n) - 1)
+			chisq[n] <- diff$chisq
 			if (pvalue[n] < min_pvalue) {
 				min_pvalue <- pvalue[n]
 				min_cutoff <- cutoffs[n]
@@ -33,7 +35,7 @@ if (length(cutoffs) == 1) {
 		})
 	}
 
-	df = data.frame(cutoffs, pvalue)
+	df = data.frame(cutoffs, chisq, pvalue)
 	df = df[order(df[,2]),]
 	write.table(df, file=out_file, sep='\t', col.names=FALSE, row.names=FALSE);
 
