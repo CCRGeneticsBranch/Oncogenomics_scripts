@@ -61,12 +61,14 @@ if [ -z $projects ];then
 		echo `date +"%Y-%m-%d %H:%M:%S"` "Uploading production database..."
 		echo `date +"%Y-%m-%d %H:%M:%S"` "$script_home_production/syncMaster.pl -u -n production -i $file_list -m $flag_list -g $project_group_list"
 		perl $script_home_production/syncMaster.pl -u -n production -i $file_list -m $flag_list -g $project_group_list
-		perl $script_home_production/runDBQuery.pl "select distinct patient_id,case_name from sample_case_mapping order by patient_id" > ${data_home}/case_list.txt
-		echo `date +"%Y-%m-%d %H:%M:%S"` "$script_home_production/runDBQuery.pl \"select distinct patient_id,case_name from sample_case_mapping order by patient_id\" > ${data_home}/case_list.txt"
-		scp ${data_home}/case_list.txt chouh@helix.nih.gov:/data/Clinomics/MasterFiles/	
-		echo `date +"%Y-%m-%d %H:%M:%S"` "Uploading development database..."
-		echo `date +"%Y-%m-%d %H:%M:%S"` "$script_home_dev/syncMaster.pl -u -n production -i $file_list -m $flag_list -g $project_group_list"		
-		perl $script_home_dev/syncMaster.pl -u -n development -i $file_list -m $flag_list -g $project_group_list
+		 if [[ "$AWS" != "true" ]];then
+			perl $script_home_production/runDBQuery.pl "select distinct patient_id,case_name from sample_case_mapping order by patient_id" > ${data_home}/case_list.txt
+			echo `date +"%Y-%m-%d %H:%M:%S"` "$script_home_production/runDBQuery.pl \"select distinct patient_id,case_name from sample_case_mapping order by patient_id\" > ${data_home}/case_list.txt"
+			scp ${data_home}/case_list.txt chouh@helix.nih.gov:/data/Clinomics/MasterFiles/	
+			echo `date +"%Y-%m-%d %H:%M:%S"` "Uploading development database..."
+			echo `date +"%Y-%m-%d %H:%M:%S"` "$script_home_dev/syncMaster.pl -u -n production -i $file_list -m $flag_list -g $project_group_list"		
+			perl $script_home_dev/syncMaster.pl -u -n development -i $file_list -m $flag_list -g $project_group_list
+		fi
 	elif [[ $todaysdate =~ 090[0-6] ]]
 	then 
 		# Run once a day so I know cron is running

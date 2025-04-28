@@ -1,5 +1,7 @@
 #!/bin/env bash
-module load bedtools
+if [[ "$AWS" == "false" ]];then
+	module load bedtools
+fi
 seg_file=$1
 gene_bed=$2
 type=$3

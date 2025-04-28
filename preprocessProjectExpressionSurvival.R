@@ -4,7 +4,7 @@ options(warn=-1)
 
 calPvalues <- function(d, s) {
 	sorted_exp <- sort(d)
-	cutoffs <- unique(round(sorted_exp[ceiling(length(sorted_exp)/10):floor(length(sorted_exp)/10*9)], 2))
+	cutoffs <- unique(round(sorted_exp[ceiling(length(sorted_exp)/10):floor(length(sorted_exp)/10*9)], 8))
 	if (length(cutoffs) == 1) {
 		return(NA);
 	}
@@ -43,7 +43,7 @@ calPvalues <- function(d, s) {
 	med_better_group <- "Low";
 	if (grepl("TRUE", names(diff$n)[diff$obs/diff$exp==min(diff$obs/diff$exp)]))
 		med_better_group <- "High";
-	return (c(round(log2(med+1),2),med_chisq,med_better_group,round(med_pvalue,4),round(log2(min_cutoff+1),2),min_chisq,min_better_group,round(min_pvalue,4)))
+	return (c(round(log2(med+1),4),med_chisq,med_better_group,round(med_pvalue,4),round(log2(min_cutoff+1),4),min_chisq,min_better_group,round(min_pvalue,4)))
 }
 
 

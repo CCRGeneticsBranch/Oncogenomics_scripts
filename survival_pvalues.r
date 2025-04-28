@@ -8,10 +8,11 @@ out_summary<-Args[8]
 
 data<-read.table(in_file, header=T, com='', sep="\t")
 data$Time <- as.numeric(as.character(data$Time))
+data$Exp <- as.numeric(as.character(data$Exp))
 s<-Surv(data$Time, data$Status == 1)
 sorted_exp <- sort(data$Exp)
 #cutoffs <- unique(round(sorted_exp, 2))
-cutoffs <- unique(round(sorted_exp[ceiling(length(sorted_exp)/10):floor(length(sorted_exp)/10*9)], 2))
+cutoffs <- unique(round(sorted_exp[ceiling(length(sorted_exp)/10):floor(length(sorted_exp)/10*9)], 8))
 print(cutoffs)
 if (length(cutoffs) == 1) {
 	cat('only one group',file=out_summary)	

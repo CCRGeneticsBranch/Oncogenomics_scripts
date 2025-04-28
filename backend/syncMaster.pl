@@ -72,6 +72,7 @@ my $script_dir = dirname(__FILE__);
 
 my $dbh = getDBI();
 my $sid = getDBSID();
+my $db_type = getDBType();
 
 my $main_column_file = "$script_dir/../../metadata/main_columns.txt";
 open(MAIN_COL_FILE, "$main_column_file") or die "Cannot open file $main_column_file";
@@ -746,15 +747,32 @@ $sth_check_rnaseq->finish;
 
 my $num = $dbh->do("update patients set is_cellline = 'Y' where exists(select * from samples where samples.patient_id=patients.patient_id and samples.tissue_cat='cell line')");
 print "updated $num patients set is_cellline\n";
-$num = $dbh->do("update patients p set case_list = (select listagg(case_name,',') within group( order by case_name ) as case_list from (select distinct patient_id, case_name from sample_case_mapping ) p2 where p.patient_id=p2.patient_id group by patient_id)");
+if ($db_type eq "mysql") {
+  $num = $dbh->do("update patients p set case_list = (select group_concat(case_name,',') as case_list from (select distinct patient_id, case_name from sample_case_mapping order by case_name) p2 where p.patient_id=p2.patient_id group by patient_id)");
+} else {
+  $num = $dbh->do("update patients p set case_list = (select listagg(case_name,',') within group( order by case_name ) as case_list from (select distinct patient_id, case_name from sample_case_mapping ) p2 where p.patient_id=p2.patient_id group by patient_id)");
+}
 print "updated $num patients set case_id\n";
-$num = $dbh->do("update patients p set project_name = (select listagg(name,',') within group( order by name ) as project_name from (select distinct patient_id, name from project_patients ) p1 where p.patient_id=p1.patient_id group by patient_id)");
+if ($db_type eq "mysql") {
+  $num = $dbh->do("update patients p set project_name = (select group_concat(name,',') as project_name from (select distinct patient_id, name from project_patients order by name) p1 where p.patient_id=p1.patient_id group by patient_id)");
+} else {
+  $num = $dbh->do("update patients p set project_name = (select listagg(name,',') within group( order by name ) as project_name from (select distinct patient_id, name from project_patients ) p1 where p.patient_id=p1.patient_id group by patient_id)");
+}
 print "updated $num patients set project_name\n";
 $num = $dbh->do("update projects set ispublic=1 where name in ('Omics')");
 print "updated $num project set isPublic\n";
-$num = $dbh->do("update samples s1 set normal_sample=(select distinct sample_id from samples s2 where s1.normal_sample=s2.sample_name) where (select count(distinct sample_id) from samples s2 where s1.normal_sample=s2.sample_name)=1 and normal_sample is not null");
+if ($db_type eq "mysql") {
+	$num = $dbh->do("update samples s1 set normal_sample=(select * from (select distinct sample_id from samples s2 where s1.normal_sample=s2.sample_name) t) where (select * from (select count(distinct sample_id) from samples s2 where s1.normal_sample=s2.sample_name) t)=1 and normal_sample is not null");
+}
+else {
+	$num = $dbh->do("update samples s1 set normal_sample=(select distinct sample_id from samples s2 where s1.normal_sample=s2.sample_name) where (select count(distinct sample_id) from samples s2 where s1.normal_sample=s2.sample_name)=1 and normal_sample is not null");
+}
 print "updated $num samples set normal_sample\n";
-$num = $dbh->do("update samples s1 set rnaseq_sample=(select distinct sample_id from samples s2 where s1.rnaseq_sample=s2.sample_name) where (select count(distinct sample_id) from samples s2 where s1.rnaseq_sample=s2.sample_name)=1 and rnaseq_sample is not null");
+if ($db_type eq "mysql") {
+	$num = $dbh->do("update samples s1 set rnaseq_sample=(select * from (select distinct sample_id from samples s2 where s1.normal_sample=s2.sample_name) t) where (select * from (select count(distinct sample_id) from samples s2 where s1.rnaseq_sample=s2.sample_name) t)=1 and rnaseq_sample is not null");
+} else {
+	$num = $dbh->do("update samples s1 set rnaseq_sample=(select distinct sample_id from samples s2 where s1.rnaseq_sample=s2.sample_name) where (select count(distinct sample_id) from samples s2 where s1.rnaseq_sample=s2.sample_name)=1 and rnaseq_sample is not null");
+}
 print "updated $num set rnaseq_sample\n";
 #$dbh->do("update sample_cases s set case_id=(select distinct c.case_id from cases c where c.status <> 'failed' and c.case_name=s.case_name and c.patient_id=s.patient_id)");
 
