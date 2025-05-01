@@ -1342,7 +1342,8 @@ sub insertCNVKit {
 	}
 	open (INFILE, "$filename") or return;
 	print_log("processing CNVKit");
-	$dbh->do("delete from var_cnvkit where case_id = '$case_id' and patient_id = '$patient_id'");
+	$dbh->do("delete from var_cnvkit where case_id = '$case_id' and patient_id = '$patient_id' and sample_id='$sample_id'");
+	$dbh->do("delete from var_cnvkit_segment where case_id = '$case_id' and patient_id = '$patient_id' and sample_id='$sample_id'");
 	my $line = <INFILE>;
 	chomp $line;
 	my @header_list = split(/\t/, $line);
@@ -1361,12 +1362,12 @@ sub insertCNVKit {
 		$sth_cnvkit->execute($patient_id, $case_id, $sample_id, $chr, $start_pos, $end_pos, $log2, $depth, $probes, $weight);		
 	}
 	$dbh->commit();
-	system("export CONDA_PATH=$conda_path;export RECONCNV_PATH=$reconCNV_path;$script_dir/run_reconCNV.sh $ratio_filename $filename");
-	system("$script_dir/gen_cnvkit_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed $segment_file_type");
+	my $gene_level = "$cnv_dir/$folder_name"."_genelevel.txt";
+	system("export CONDA_PATH=$conda_path;export RECONCNV_PATH=$reconCNV_path;$script_dir/run_reconCNV.sh $gene_level $filename");
+	system("export AWS=$aws;$script_dir/gen_cnvkit_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed $segment_file_type");
 	if ( -e $gene_segment_filename) {
 		open (GENE_SEG_FILE, "$gene_segment_filename");
 		print_log("processing CNVKit gene segments: $gene_segment_filename");
-		$dbh->do("delete from var_cnvkit_segment where case_id = '$case_id' and patient_id = '$patient_id'");
 		while(<GENE_SEG_FILE>) {
 			chomp;
 			my @fields = split(/\t/);
@@ -1399,7 +1400,7 @@ sub insertCNVKitGene {
 	}
 	open (INFILE, "$filename") or return;
 	print_log("processing CNVKit gene level");
-	$dbh->do("delete from var_cnvkit_gene_level where case_id = '$case_id' and patient_id = '$patient_id'");
+	$dbh->do("delete from var_cnvkit_gene_level where case_id = '$case_id' and patient_id = '$patient_id' and sample_id='$sample_id'");
 	my $line = <INFILE>;
 	chomp $line;
 	my @header_list = split(/\t/, $line);

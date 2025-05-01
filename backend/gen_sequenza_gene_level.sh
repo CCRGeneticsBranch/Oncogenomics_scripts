@@ -1,6 +1,6 @@
 #!/bin/env bash
 
-if [[ "$AWS" == "false" ]];then
+if [[ "$AWS" != "true" ]];then
 	module load bedtools;
 fi
 

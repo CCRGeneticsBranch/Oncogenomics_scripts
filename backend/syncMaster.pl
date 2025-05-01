@@ -354,7 +354,7 @@ for (my $file_idx=0; $file_idx<=$#input_files; $file_idx++) {
 			$exp_type = "TCR";
 		}			
 		
-		next if ($exp_type eq "ChIPseq" || $exp_type eq "HiC");
+		#next if ($exp_type eq "ChIPseq" || $exp_type eq "HiC");
 		
 		next if ($exp_type =~ /rejected/);
 
