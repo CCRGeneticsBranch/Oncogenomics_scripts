@@ -159,7 +159,7 @@ my @input_files = split(/,/, $input_file_list);
 my @input_flags = split(/,/, $modified_flag_list) if ($modified_flag_list);
 my @project_groups = split(/,/, $project_group_list) if ($project_group_list);
 my $sql_smp = "insert into samples values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-my $sql_pat = "insert into patients values(?,?,?,?,?,?,?)";
+my $sql_pat = "insert into patients values(?,?,?,?,?,?)";
 my $sql_smp_dtl = "insert into sample_details values(?,?,?)";
 
 my $sql_prj = "insert into projects (name, description, updated_at, created_at, project_group, status, user_id, version) values(?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP, ?, '0', '1', '19')";
@@ -641,7 +641,7 @@ for (my $file_idx=0; $file_idx<=$#input_files; $file_idx++) {
 					$sth_pat->bind_param(4, 'N');
 					$sth_pat->bind_param(5, $alternate_id);
 					$sth_pat->bind_param(6, $protocol_no);
-					$sth_pat->bind_param(7, 'NA');					
+					#$sth_pat->bind_param(7, 'NA');					
 					$sth_pat->execute();	
 					$patients{$cus_id} = '';
 				}
@@ -747,12 +747,13 @@ $sth_check_rnaseq->finish;
 
 my $num = $dbh->do("update patients set is_cellline = 'Y' where exists(select * from samples where samples.patient_id=patients.patient_id and samples.tissue_cat='cell line')");
 print "updated $num patients set is_cellline\n";
-if ($db_type eq "mysql") {
-  $num = $dbh->do("update patients p set case_list = (select group_concat(case_name,',') as case_list from (select distinct patient_id, case_name from sample_case_mapping order by case_name) p2 where p.patient_id=p2.patient_id group by patient_id)");
-} else {
-  $num = $dbh->do("update patients p set case_list = (select listagg(case_name,',') within group( order by case_name ) as case_list from (select distinct patient_id, case_name from sample_case_mapping ) p2 where p.patient_id=p2.patient_id group by patient_id)");
-}
-print "updated $num patients set case_id\n";
+my $sql;
+#if ($db_type eq "mysql") {
+#  $num = $dbh->do("update patients p set case_list = (select group_concat(case_name,',') as case_list from (select distinct patient_id, case_name from sample_case_mapping order by case_name) p2 where p.patient_id=p2.patient_id group by patient_id)");
+#} else {
+#  $num = $dbh->do("update patients p set case_list = (select listagg(case_name,',') within group( order by case_name ) as case_list from (select distinct patient_id, case_name from sample_case_mapping ) p2 where p.patient_id=p2.patient_id group by patient_id)");
+#}
+#print "updated $num patients set case_id\n";
 if ($db_type eq "mysql") {
   $num = $dbh->do("update patients p set project_name = (select group_concat(name,',') as project_name from (select distinct patient_id, name from project_patients order by name) p1 where p.patient_id=p1.patient_id group by patient_id)");
 } else {
