@@ -107,7 +107,7 @@ my $project_patient_summary = <<'end';
 select p.project_id, name, count(distinct p.patient_id) as patients from project_patients p, var_samples s where p.patient_id=s.patient_id group by p.project_id, name;
 end
 my $project_patients = <<'end';
-select distinct p.*,project_id,name from patients p, samples s1, project_sample_mapping s2,projects j where j.id=s2.project_id and s1.sample_id=s2.sample_id and s1.patient_id=p.patient_id;
+select distinct p.*,project_id,name from patients p, samples s1, project_sample_mapping s2,projects j where j.id=s2.project_id and s1.sample_id=s2.sample_id and s1.patient_id=p.patient_id;           
 end
 my $project_processed_cases = <<'end';
 select distinct p.project_id,p.patient_id,p.case_name,c.case_id,c.path,c.version,c.genome_version from project_cases p, processed_cases c 
