@@ -18,7 +18,7 @@ my $sth_missing_tiers = $dbh->prepare("select c.patient_id,c.case_id,c.path from
 $sth_missing_tiers->execute();
 while (my ($patient_id, $case_id, $path) = $sth_missing_tiers->fetchrow_array) {
   print("processing $patient_id, $case_id in $path\n");
-  system("$script_dir/uploadCase.pl -i $processed_data_dir/$path -p $patient_id -c $case_id -t tier");
+  system("$script_dir/uploadCase.pl -i $processed_data_dir/$path -p $patient_id -c $case_id -t tier -d production");
 }
 $sth_missing_tiers->finish;
 

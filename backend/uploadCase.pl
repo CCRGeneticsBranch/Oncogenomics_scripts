@@ -31,6 +31,7 @@ my $app_path = abs_path($script_dir."/../../..");
 my $target_patient;
 my $target_case;
 my $url = getConfig("URL");
+my $url_production = getConfig("URL_PRODUCTION");
 my $web_user = getConfig("WEB_USER");
 my $conda_path = getConfig("CONDA_PATH");
 my $reconCNV_path = getConfig("RECONCNV_PATH");
@@ -46,6 +47,7 @@ my $remove_noncoding = 0;
 my $refresh_exp = 0;
 my $case_name_eq_id = 0;
 my $email = getConfig("EMAILS");
+my $dev_email = getConfig("DEV_EMAILS");
 my $dir_example = abs_path("$app_path/storage/ProcessedResults/processed_DATA");
 my $dir;
 my $project_folder_desc;
@@ -342,21 +344,6 @@ $sth_cases->finish;
 my %fusion_data = ();
 my %coding_genes = ();
 
-#get admin emails
-my @emails = ('NCI-FrederickAVIA@mail.nih.gov','khanjav@mail.nih.gov',  'vineela.gangalapudi@nih.gov', 'wenxi@mail.nih.gov', 'chouh@nih.gov', 'erica.pehrsson@nih.gov', 'patrick.zhao@nih.gov', 'NCIBioinformatics_Oncogenomics@mail.nih.gov');
-my @compass_email_list = ('kristin.valdez@nih.gov','manoj.tyagi@nih.gov');
-#my @emails = ('chouh@nih.gov');
-#$sth_emails->execute();
-#while (my @row = $sth_emails->fetchrow_array) {	
-#	push (@emails, $row[0]);
-#}
-#$sth_emails->finish;
-if ($project_folder =~ /compass/) {
-	push(@emails, @compass_email_list);
-}
-
-my $email_list = join(',', @emails);
-
 #get gene/transcripts id mapping
 my %symbol_mapping = ();
 my %gene_mapping = ();
@@ -473,7 +460,11 @@ foreach my $patient_dir (@patient_dirs) {
 			$dbh->commit();			
 		}
 		
-		my $patient_link = "<a target=_blank href='$url/viewPatient/any/$patient_id'>$patient_id</a>";
+		my $link_url = $url;
+		if ($db_name eq "production") {
+			$link_url = $url_production;
+		}
+		my $patient_link = "<a target=_blank href='$link_url/viewPatient/any/$patient_id'>$patient_id</a>";
 		my $patient_key = "$patient_link\t$case_id\t$diagnosis";
 
 		#process fusion		
@@ -889,17 +880,13 @@ $stn_rnaseqfp_avia->execute();
 my $subject   = "Oncogenomics $db_name DB upload status ($project_folder)";
 my $sender    = 'oncogenomics@mail.nih.gov';
 #my $recipient = 'hsien-chao.chou@nih.gov';
-my $recipient = '';
+my $recipient = $dev_email;
 #my $recipient = 'vuonghm@mail.nih.gov';
-if ($email ne "") {
+if ($email ne "" && ($load_type eq "all" || $load_type eq "db")) {
 	$recipient = "$email";
 }
-else {
-	if ($load_type eq "all" && lc($db_name) eq "production") {
-		$recipient = $email_list;	
-	}
-}
 
+#print("recipient: $recipient\n");
 my $log_cotent = "";
 my $failed_cotent = "";
 my $err_cotent = "";
@@ -1363,7 +1350,7 @@ sub insertCNVKit {
 	}
 	$dbh->commit();
 	my $gene_level = "$cnv_dir/$folder_name"."_genelevel.txt";
-	system("export CONDA_PATH=$conda_path;export RECONCNV_PATH=$reconCNV_path;$script_dir/run_reconCNV.sh $gene_level $filename");
+	system("export CONDA_PATH=$conda_path;export RECONCNV_PATH=$reconCNV_path;$script_dir/run_reconCNV.sh $ratio_filename $filename");
 	system("export AWS=$aws;$script_dir/gen_cnvkit_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed $segment_file_type");
 	if ( -e $gene_segment_filename) {
 		open (GENE_SEG_FILE, "$gene_segment_filename");

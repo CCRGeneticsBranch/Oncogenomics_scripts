@@ -7,6 +7,7 @@ use Getopt::Long qw(GetOptions);
 use File::Basename;
 use Time::Piece;
 use Time::Seconds;
+use Try::Tiny;
 use Cwd 'abs_path';
 require(dirname(abs_path($0))."/../lib/Onco.pm");
 
@@ -62,7 +63,7 @@ if ( -e $out_file) {
 	}
 }
 close(FH);
-my $sql = "select * from genotyping g where exists(select * from project_samples s1 where s1.project_id=$project_id and g.sample1=s1.sample_id)  and exists(select * from project_samples s2 where s2.project_id=$project_id and g.sample2=s2.sample_id)";
+my $sql = "select * from genotyping g where exists(select * from project_samples s1 where s1.project_id=$project_id and (g.sample1=s1.sample_id or g.sample1=s1.sample_name)) and exists(select * from project_samples s2 where s2.project_id=$project_id and (g.sample2=s2.sample_id or g.sample2=s2.sample_name))";
 my $sth_gt_db = $dbh->prepare($sql);
 print("$sql...\n");
 my $sth_gt_ins = $dbh->prepare("insert into /*+ APPEND */ genotyping values(?,?,?)");
@@ -145,17 +146,21 @@ foreach my $sample1 (@sample_list) {
 				$res = $sample_pairs{$sample2}{$sample1};
 			} elsif (exists($sample_pairs{$sample1}{$sample2})) {
 				$res = $sample_pairs{$sample1}{$sample2};
-			} else {
-				if (exists($gt_db{$sample1}{$sample2})) {
-					$res = $gt_db{$sample1}{$sample2};
-				} elsif (exists($gt_db{$sample2}{$sample1})) {
-					$res = $gt_db{$sample2}{$sample1};
-				}
-				if ($res == -1) {
+			} elsif (exists($gt_db{$sample1}{$sample2})) {
+				$res = $gt_db{$sample1}{$sample2};
+			} elsif (exists($gt_db{$sample2}{$sample1})) {
+				$res = $gt_db{$sample2}{$sample1};
+			}
+			if ($res == -1) {
 					$res = `perl $script_dir/scoreGenotypes.pl $file1 $file2`;
 					chomp $res;
 					$sample_pairs{$sample1}{$sample2} = $res;
-					$sth_gt_ins->execute($sample1, $sample2, $res);
+					try {
+						$sth_gt_ins->execute($sample1, $sample2, $res);
+					} catch {
+						unless (/ORA\-00001/) {
+							die "Error: $_";
+					};
 					$in_count++;
 					if (($in_count % 100) == 0) {
 						$dbh->commit();
