@@ -461,12 +461,16 @@ for (my $file_idx=0; $file_idx<=$#input_files; $file_idx++) {
 		}
 		
 		if (!defined $case_name || $case_name eq "") {
-			next;
-			if ($sample_project ne "") {
-				$case_name = $sample_project;
+			if ($exp_type eq "ChIPseq" || $exp_type eq "HiC") {
+				$case_name = $exp_type;
 			} else {
-				$case_name = $default_case_id;
+				next;
 			}
+			#if ($sample_project ne "") {
+			#	$case_name = $sample_project;
+			#} else {
+			#	$case_name = $default_case_id;
+			#}
 		} else {
 			if ($sample_project ne "") {
 				$case_name = $case_name.",".$sample_project;

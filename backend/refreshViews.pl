@@ -84,7 +84,7 @@ select project_id, gene,type,'germline' as tier,germline_level as tier_type, cou
 end
 
 my $project_mview = <<'end';
-select distinct id,name,description,ispublic,patients,cases,samples,processed_patients,processed_cases,version,survival,exome,panel,rnaseq,whole_genome,status,user_id,created_by,updated_at from 
+select distinct id,name,description,ispublic,patients,cases,samples,processed_patients,processed_cases,version,survival,exome,panel,rnaseq,whole_genome,chipseq,hic,status,user_id,created_by,updated_at from 
         (select p1.id, p1.name, p1.description, p1.ispublic, 
           (select count(distinct patient_id) from project_cases s where p1.id=s.project_id) as patients,
                   (select count(distinct case_name) from project_cases s where p1.id=s.project_id) as cases,
@@ -97,9 +97,12 @@ select distinct id,name,description,ispublic,patients,cases,samples,processed_pa
           (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='Panel') as panel,
           (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='RNAseq') as rnaseq,
           (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='Whole Genome') as whole_genome,
+          (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='ChIPseq') as chipseq,
+          (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='HiC') as hic,
           status, p1.user_id, u.email as created_by, p1.updated_at
-           from projects p1 left join users u on p1.user_id=u.id,project_samples p2 where p1.id=p2.project_id) projects where (rnaseq is not null or whole_genome is not null or exome is not null or panel is not null or panel is not null or whole_genome is not null);
+           from projects p1 left join users u on p1.user_id=u.id,project_samples p2 where p1.id=p2.project_id) projects where (rnaseq is not null or whole_genome is not null or exome is not null or panel is not null or panel is not null or whole_genome is not null or chipseq is not null or hic is not null)
 end
+
 my $project_patient_summary = <<'end';
 select p.project_id, name, count(distinct p.patient_id) as patients from project_patients p, var_samples s where p.patient_id=s.patient_id group by p.project_id, name;
 end
@@ -365,7 +368,8 @@ if ($refresh_all || $do_prj_summary) {
   do_insert('user_projects', $user_projects, 1);
   do_insert('fusion_count', $fusion_count, 1);
   do_insert('project_var_count', $project_var_count, 1);  
-  do_insert('project_mview', $project_mview, 1);
+  #do_insert('project_mview', $project_mview, 1);
+  do_create('project_mview', $project_mview );
 }
 
 if ($refresh_all || $do_avia) {
