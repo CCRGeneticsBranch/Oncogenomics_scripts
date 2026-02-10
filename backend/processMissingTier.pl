@@ -14,7 +14,7 @@ my $processed_data_dir = abs_path($script_dir."/../../../storage/ProcessedResult
 
 my $dbh = getDBI();
 
-my $sth_missing_tiers = $dbh->prepare("select c.patient_id,c.case_id,c.path from (select distinct patient_id,case_id from var_samples s where not exists(select * from var_tier_avia a where s.patient_id=a.patient_id and s.case_id=a.case_id)) s, cases c where s.patient_id=c.patient_id and s.case_id=c.case_id");
+my $sth_missing_tiers = $dbh->prepare("select c.patient_id,c.case_id,c.path from (select distinct patient_id,case_id from var_samples s where not exists(select * from var_tier_avia a where s.patient_id=a.patient_id and s.case_id=a.case_id)) s, cases c where s.patient_id=c.patient_id and s.case_id=c.case_id and path<> 'compass_tso500'");
 $sth_missing_tiers->execute();
 while (my ($patient_id, $case_id, $path) = $sth_missing_tiers->fetchrow_array) {
   print("processing $patient_id, $case_id in $path\n");

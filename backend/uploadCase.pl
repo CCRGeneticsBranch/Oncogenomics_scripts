@@ -861,12 +861,12 @@ foreach my $patient_dir (@patient_dirs) {
 		}
 
 		#process expression data
-		if ($load_type eq "all") {
-			my $exp_cmd = "perl ${script_dir}/caseExpressionAnalysis.pl -p $patient_id -c $case_id -t $project_folder";
+		#if ($load_type eq "all") {
+			#my $exp_cmd = "perl ${script_dir}/caseExpressionAnalysis.pl -p $patient_id -c $case_id -t $project_folder";
 			#print("$exp_cmd\n");
-			print_log("processing expression analysis");
-			system($exp_cmd);
-		}
+			#print_log("processing expression analysis");
+			#system($exp_cmd);
+		#}
 		#next if ($load_type ne "exp" || $refresh_exp);		
 		
 		my $duration = time - $start;
@@ -938,7 +938,7 @@ my $data = qq{
     <h2>The following <font color=red>$project_folder_desc</font> data has been uploaded to $db_name DB ($total_cases cases):</h2>
 
     <table id="log" border=1 cellspacing="2" width="60%">
-    	<thead><tr><th>Patient ID</th><th>Case ID</th><th>Diagnosis</th><th>Germline</th><th>Somatic</th><th>DNA Variants</th><th>RNASeq Variants</th><th>Hotspot</th><th>Tier</th><th>Fusion</th><th>Mixcr</th><th>Expression</th><th>CNV</th><th>NeoAntigen</th><th>Mutation Burden</th><th>TCellExTRECT</th></tr></thead>
+    	<thead><tr><th>Patient ID</th><th>Case ID</th><th>Diagnosis</th><th>Germline</th><th>Somatic</th><th>Tumor Only</th><th>RNASeq Variants</th><th>Hotspot</th><th>Tier</th><th>Fusion</th><th>Mixcr</th><th>Expression</th><th>CNV</th><th>NeoAntigen</th><th>Mutation Burden</th><th>TCellExTRECT</th></tr></thead>
     	<tbody>$log_cotent</tbody>
     </table>
     <HR>
@@ -1350,7 +1350,9 @@ sub insertCNVKit {
 	}
 	$dbh->commit();
 	my $gene_level = "$cnv_dir/$folder_name"."_genelevel.txt";
-	system("export CONDA_PATH=$conda_path;export RECONCNV_PATH=$reconCNV_path;$script_dir/run_reconCNV.sh $ratio_filename $filename");
+	if ($aws eq "false") {
+		system("export CONDA_PATH=$conda_path;export RECONCNV_PATH=$reconCNV_path;$script_dir/run_reconCNV.sh $ratio_filename $filename");
+	}
 	system("export AWS=$aws;$script_dir/gen_cnvkit_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed $segment_file_type");
 	if ( -e $gene_segment_filename) {
 		open (GENE_SEG_FILE, "$gene_segment_filename");

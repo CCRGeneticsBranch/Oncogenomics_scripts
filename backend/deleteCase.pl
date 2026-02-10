@@ -69,6 +69,7 @@ $sth_var_cases->finish;
 #if ($found) {
   print_log("deleting DB $patient_id, $case_id, $path");
   $dbh->do("delete from var_samples where patient_id='$patient_id' and case_id='$case_id'");
+  $dbh->do("delete from var_sample_avia_oc where patient_id='$patient_id' and case_id='$case_id'");
   $dbh->do("delete from var_type where patient_id='$patient_id' and case_id='$case_id'");
   $dbh->do("delete from var_fusion where patient_id='$patient_id' and case_id='$case_id'");
   $dbh->do("delete from var_qc where patient_id='$patient_id' and case_id='$case_id'");

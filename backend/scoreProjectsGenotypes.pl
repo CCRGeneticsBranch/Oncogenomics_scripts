@@ -152,6 +152,9 @@ foreach my $sample1 (@sample_list) {
 				} elsif (exists($gt_db{$sample2}{$sample1})) {
 					$res = $gt_db{$sample2}{$sample1};
 				}
+				if($res eq "") {
+					$res = -1;
+				}
 				if ($res == -1) {
 					$res = `perl $script_dir/scoreGenotypes.pl $file1 $file2`;
 					chomp $res;

@@ -58,7 +58,9 @@ my $processed_sample_cases = <<'end';
 select distinct s.patient_id,s.sample_id, c.case_name,c.case_id, c.path, s.sample_name, s.sample_alias, s.exp_type, s.tissue_cat, v.type,count(*) as var_cnt 
 from samples s, cases c, var_samples v
 where s.sample_id=v.sample_id and v.patient_id=c.patient_id and v.case_id=c.case_id
-group by s.patient_id,s.sample_id, c.case_name,c.case_id, c.path, s.sample_name, s.sample_alias, v.type,s.exp_type, s.tissue_cat;
+group by s.patient_id,s.sample_id, c.case_name,c.case_id, c.path, s.sample_name, s.sample_alias, v.type,s.exp_type, s.tissue_cat union
+select distinct s.patient_id,s.sample_id, s.case_name,s.case_name, 'chipseq', s.sample_name, s.sample_alias, s.exp_type, s.tissue_cat, 'chipseq', 0
+from sample_cases s, chipseq c where s.sample_id=c.sample_id
 end
 my $project_cases = <<'end';
 select distinct p.project_id,p.patient_id,s.case_name,s.case_id from project_samples p, sample_cases s where p.sample_id=s.sample_id and 

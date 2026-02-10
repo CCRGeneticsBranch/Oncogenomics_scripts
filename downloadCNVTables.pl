@@ -98,6 +98,39 @@ while (my ($patient_id, $case_id, $sample_id) = $sth_cnv->fetchrow_array) {
   system("rm $out_file_tmp");
 }
 $sth_cnv->finish;
+
+# get CNV summary from table first
+$sql = "select distinct c.* from var_cnv_summary c, project_samples p where c.sample_id=p.sample_id and project_id=$project_id";
+my $sth_cnv_summary = $dbh->prepare($sql);
+$sth_cnv_summary->execute();
+
+my %cnv_summary = ();
+while (my @row = $sth_cnv_summary->fetchrow_array) {
+  $cnv_summary{"$row[0]\t$row[1]\t$row[2]"} = join("\t", @row);
+}
+$sth_cnv_summary->finish;
+my $sth_insert_cnv_summary = $dbh->prepare("insert into var_cnv_summary values(?,?,?,?,?,?,?,?,?,?)");
+open(SUMMARY_FILE, "$summary_file") or die "cannot open file $summary_file";
+<SUMMARY_FILE>;
+while (<SUMMARY_FILE>) {
+  chomp;
+  my @fields = split(/\t/);
+  my $key = "$fields[0]\t$fields[1]\t$fields[2]";
+  if ($#fields == 10) {
+    splice @fields, 3, 1;
+  }
+  if ($fields[8] eq "NA") {
+    $fields[8] = "0";
+  }
+  if ($fields[9] eq "NA") {
+    $fields[9] = "0";
+  }
+  if (!exists($cnv_summary{$key})) {
+    $sth_insert_cnv_summary->execute(@fields);
+  }
+}
+
+
 $dbh->disconnect();
 my $out_zip = "$out_dir/$project_id/cnv/$project_id.$type.zip";
 if ( -e $out_zip ) {
