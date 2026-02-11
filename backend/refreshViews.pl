@@ -279,6 +279,10 @@ select left_chr, left_gene, right_chr, right_gene, substr(var_level,1,1) as var_
 where v.patient_id=p.patient_id and v.case_id=p.case_id and v.patient_id=p2.patient_id group by project_id,left_chr,left_gene,right_chr,right_gene,substr(var_level,1,1),diagnosis
 END
 
+my $cancer_types = <<'END';
+select distinct diagnosis as id,  diagnosis as name, diagnosis as description from patients
+END
+
 my $var_sample_avia_oc_hg19 = <<'end';
 select v.*,a.* 
 from var_samples_tmp v, hg19_annot_oc a
@@ -372,6 +376,7 @@ if ($refresh_all || $do_prj_summary) {
   do_insert('project_var_count', $project_var_count, 1);  
   #do_insert('project_mview', $project_mview, 1);
   do_create('project_mview', $project_mview );
+  do_create('cancer_types', $cancer_types );
 }
 
 if ($refresh_all || $do_avia) {
