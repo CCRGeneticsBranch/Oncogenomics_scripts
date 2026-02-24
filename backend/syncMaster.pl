@@ -28,7 +28,8 @@ my $project_group_list;
 my $keep_old = 0;
 my $update_case = 0;
 my $rm_orphan_prj = 0;
-my $database_name = "development";
+my $database_name = getConfig("TIER");
+my $email_list = getConfig("MASTER_EMAILS");
 my $verbose = 0;
 
 my $usage = <<__EOUSAGE__;
@@ -783,20 +784,6 @@ print "updated $num set rnaseq_sample\n";
 
 my $content = "";
 my $json;
-my $email_file = dirname(__FILE__)."/../../../config/email_list.json";
-#my $email_file = dirname(__FILE__."../");
-# print $email_file."\n";
-{
-  local $/; #Enable 'slurp' mode
-  open my $fh, "<", $email_file;
-  $json = <$fh>;
-  close $fh;
-}
-my $data = decode_json($json);
-my $email_list=$data->{'master.all'};
-if ($database_name eq "development" || $database_name eq "public") {
-	$email_list=$data->{'master'};
-}
 my $modified_file_list = join(",", @modified_files);
 if ($#errors == -1) {
 	$content = "<H4>Upload to $database_name database successful!</H4>";
@@ -928,10 +915,6 @@ sub sendEmail {
 	my ($content, $database_name, $recipient) = @_;
 	my $subject   = "OncogenomicsDB master file upload status";
 	my $sender    = 'oncogenomics@mail.nih.gov';
-	#my $recipient = 'hsien-chao.chou@nih.gov, rajesh.patidar@nih.gov, manoj.tyagi@nih.gov, yujin.lee@nih.gov, wangc@mail.nih.gov';
-#	if ($database_name eq "development") {
-#		$recipient = 'vuonghm@mail.nih.gov';
-#	}
 	my $mime = MIME::Lite->new(
 	    'From'    => $sender,
 	    'To'      => $recipient,

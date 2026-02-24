@@ -31,12 +31,12 @@ my $app_path = abs_path($script_dir."/../../..");
 my $target_patient;
 my $target_case;
 my $url = getConfig("URL");
-my $url_production = getConfig("URL_PRODUCTION");
+my $url_production = getConfig("URL_LINK");
 my $web_user = getConfig("WEB_USER");
 my $conda_path = getConfig("CONDA_PATH");
 my $reconCNV_path = getConfig("RECONCNV_PATH");
 my $aws = getConfig("AWS");
-my $db_name = "development";
+my $db_name = getConfig("TIER");
 my $update_list_file;
 my $skip_fusion = 0;
 my $replaced_old = 0;
@@ -47,7 +47,7 @@ my $remove_noncoding = 0;
 my $refresh_exp = 0;
 my $case_name_eq_id = 0;
 my $email = getConfig("EMAILS");
-my $dev_email = getConfig("DEV_EMAILS");
+my $dev_email = getConfig("ADMIN_EMAILS");
 my $dir_example = abs_path("$app_path/storage/ProcessedResults/processed_DATA");
 my $dir;
 my $project_folder_desc;
@@ -886,6 +886,11 @@ if ($email ne "" && ($load_type eq "all" || $load_type eq "db")) {
 	$recipient = "$email";
 }
 
+my $load_type_str = "";
+if ($load_type ne "all") {
+	$load_type_str = "($load_type)";
+}
+
 #print("recipient: $recipient\n");
 my $log_cotent = "";
 my $failed_cotent = "";
@@ -935,7 +940,7 @@ if (!$project_folder_desc) {
 }
 my $data = qq{
 	
-    <h2>The following <font color=red>$project_folder_desc</font> data has been uploaded to $db_name DB ($total_cases cases):</h2>
+    <h2>The following <font color=red>$project_folder_desc</font> data$load_type_str has been uploaded to $db_name DB ($total_cases cases):</h2>
 
     <table id="log" border=1 cellspacing="2" width="60%">
     	<thead><tr><th>Patient ID</th><th>Case ID</th><th>Diagnosis</th><th>Germline</th><th>Somatic</th><th>Tumor Only</th><th>RNASeq Variants</th><th>Hotspot</th><th>Tier</th><th>Fusion</th><th>Mixcr</th><th>Expression</th><th>CNV</th><th>NeoAntigen</th><th>Mutation Burden</th><th>TCellExTRECT</th></tr></thead>
