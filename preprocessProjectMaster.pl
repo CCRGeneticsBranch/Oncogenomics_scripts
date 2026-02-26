@@ -107,7 +107,7 @@ if ($project_id eq "all") {
 		my ($patient_id, $case_id) = $_ =~ /(.*)\/(.*)\/.*/;
 		print("$patient_id, $case_id\n");
 		#my $sth = $dbh->prepare("select distinct project_id, name from project_cases c, projects p where c.project_id=p.id and patient_id='$patient_id' and case_id='$case_id'");
-		my $sth = $dbh->prepare("select distinct project_id,name from project_sample_mapping m, sample_case_mapping s,projects p where m.sample_id=s.sample_id and m.project_id=p.id and s.patient_id='$patient_id' and s.case_name='$case_id'");
+		my $sth = $dbh->prepare("select distinct project_id,name from project_sample_mapping m, sample_case_mapping s,projects p where m.sample_id=s.sample_id and m.project_id=p.id and s.patient_id='$patient_id' and s.case_id='$case_id'");
 		$sth->execute();
 		while (my ($pid, $name) = $sth->fetchrow_array) {
 			$projects{$pid} = $name;
