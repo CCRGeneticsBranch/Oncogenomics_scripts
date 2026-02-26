@@ -10,7 +10,8 @@ use MIME::Lite;
 require(dirname(abs_path($0))."/lib/Onco.pm");
 
 my $project_id;
-my $email = "";
+my $email = getConfig("EMAILS");
+my $tier = getConfig("TIER");
 my $url = getConfig("URL");
 my $aws = getConfig("AWS");
 my $web_user = getConfig("WEB_USER");
@@ -204,7 +205,7 @@ sub sendEmail {
 	my $sender    = 'oncogenomics@mail.nih.gov';
 	my $recipient = $email;
 	my %projects = %{$projects_ref};
-	my $content = "<H4> The following project level data have been processed</H4><table border=1 cellspacing=2><th>Project ID</th><th>Name</th>";
+	my $content = "<H4> The following project level data ($tier) have been processed</H4><table border=1 cellspacing=2><th>Project ID</th><th>Name</th>";
 	foreach my $pid (keys %projects) {
 		my $name = $projects{$pid};
 		$content = $content."<tr><td>$pid</td><td><a href=$url/viewProjectDetails/$pid>$name</a></td>";

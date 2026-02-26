@@ -29,4 +29,4 @@ ${script_home}/export_new_variants.pl >> ${log_file}
 echo "********** 5. Refreshing views **********" >> ${log_file}
 ${script_home}/refreshViews.pl -c -h >> ${log_file}
 echo "********** 6. Processing project data **********" >> ${log_file}
-${script_home}/../preprocessProjectMaster.pl -p $new -e $EMAILS -u $URL -m -g -c
+${script_home}/../preprocessProjectMaster.pl -p $new -m -g -c
