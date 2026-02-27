@@ -264,6 +264,8 @@ for (my $file_idx=0; $file_idx<=$#input_files; $file_idx++) {
 		next unless ($bio_id && $bio_id ne "");
 		#my $sub_id = defined($header_idx{'Subject ID'})? $fields[$header_idx{'Subject ID'}]: "";
 		my $type = $fields[$header_idx{'Type'}];
+		my $portal = defined($header_idx{'Oncogenomics portal'})? $fields[$header_idx{'Oncogenomics portal'}] : "";
+		next if($portal !~ /yes/i);
 
 		my $illumina_id = "";
 		my $cgi_sample_id = "";
@@ -311,6 +313,12 @@ for (my $file_idx=0; $file_idx<=$#input_files; $file_idx++) {
 		}
 		if ($type =~ /normal/i) {
 			$tissue_cat = "normal";
+		}
+		if ($type =~ /cfDNA/i) {
+			$tissue_cat = "cell_free";
+		}
+		if ($type =~ /reference/i) {
+			$tissue_cat = "reference";
 		}
 
 
