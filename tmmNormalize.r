@@ -4,7 +4,7 @@ suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(tibble))
 suppressPackageStartupMessages(library(DESeq2))
 suppressPackageStartupMessages(library(sva))
-suppressPackageStartupMessages(library(GSVA))
+#suppressPackageStartupMessages(library(GSVA))
 suppressPackageStartupMessages(library(GSEABase))
 
 runGSVA <- function(lcpm, gmt, out_file, method="gsva", kcdf="Gaussian") {

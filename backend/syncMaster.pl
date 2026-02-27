@@ -265,7 +265,7 @@ for (my $file_idx=0; $file_idx<=$#input_files; $file_idx++) {
 		#my $sub_id = defined($header_idx{'Subject ID'})? $fields[$header_idx{'Subject ID'}]: "";
 		my $type = $fields[$header_idx{'Type'}];
 		my $portal = defined($header_idx{'Oncogenomics portal'})? $fields[$header_idx{'Oncogenomics portal'}] : "";
-		next if($portal !~ /yes/i);
+		next if($portal =~ /no/i);
 
 		my $illumina_id = "";
 		my $cgi_sample_id = "";
