@@ -5,7 +5,6 @@ use warnings;
 use DBI;
 use Try::Tiny;
 use File::Basename;
-use DBD::Oracle qw(:ora_types);
 use Getopt::Long qw(GetOptions);
 use Time::Piece;
 use Cwd 'abs_path';
