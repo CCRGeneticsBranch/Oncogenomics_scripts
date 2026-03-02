@@ -60,6 +60,6 @@ while (my @row = $sth_novel->fetchrow_array) {
   } 
 }
 close(OUT_FILE);
-system("chmod 770 $out_file");
+system("chmod 777 $out_file");
 $dbh->disconnect();
 print_log("Done");
