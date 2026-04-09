@@ -59,36 +59,56 @@ if ($sth_gt->fetchrow_array) {
 $sth_gt->finish;
 my $sql = "select distinct path,sample_id,sample_name,case_id from processed_sample_cases where patient_id='$patient_id' order by sample_id";
 my $sth_samples = $dbh->prepare($sql);
+my %cnt = ();
 $sth_samples->execute();
 my %files = ();
 while (my ($path, $sample_id, $sample_name, $case_id) = $sth_samples->fetchrow_array) {
 	my $file = "$app_dir/storage/ProcessedResults/$path/$patient_id/$case_id/$sample_id/qc/$sample_id.star.gt";
 	if ( -e $file ) {		
 		$files{$sample_name}{$case_id} = $file;
+		my $wl = `wc -l $file| cut -d ' ' -f1`;
+		$cnt{"$sample_id,$sample_name"} = $wl;
 		next;
 	}
 	$file = "$app_dir/storage/ProcessedResults/$path/$patient_id/$case_id/$sample_name/qc/$sample_name.star.gt";
 	if ( -e $file ) {
 		$files{$sample_name}{$case_id} = $file;
+		my $wl = `wc -l $file| cut -d ' ' -f1`;
+		$cnt{"$sample_id,$sample_name"} = $wl;
 		next;
 	}
 	$file = "$app_dir/storage/ProcessedResults/$path/$patient_id/$case_id/$sample_id/qc/$sample_id.bwa.gt";
 	if ( -e $file ) {
 		$files{$sample_name}{$case_id} = $file;
+		my $wl = `wc -l $file| cut -d ' ' -f1`;
+		$cnt{"$sample_id,$sample_name"} = $wl;
 		next;
 	}
 	$file = "$app_dir/storage/ProcessedResults/$path/$patient_id/$case_id/$sample_name/qc/$sample_name.bwa.gt";
 	if ( -e $file ) {
 		$files{$sample_name}{$case_id} = $file;
+		my $wl = `wc -l $file| cut -d ' ' -f1`;
+		$cnt{"$sample_id,$sample_name"} = $wl;
 		next;
 	}
 	$file = "$app_dir/storage/ProcessedResults/$path/$patient_id/$case_id/$sample_name/qc/$sample_name.gt";
 	if ( -e $file ) {
 		$files{$sample_name}{$case_id} = $file;
+		my $wl = `wc -l $file| cut -d ' ' -f1`;
+		$cnt{"$sample_id,$sample_name"} = $wl;
 		next;
 	}
 }
 $sth_samples->finish;
+
+foreach my $sample (keys %cnt) {
+	my $cnt_value = $cnt{$sample};
+	chomp $cnt_value;
+	my ($sample_id,$sample_name) = split ",", $sample;
+	#print("===$sample_id\t$sample_name\t$cnt_value\n");
+	$dbh->do("delete genotyping_count where sample_id='$sample_id'");
+	$dbh->do("insert into genotyping_count values('$sample_id','$sample_name',$cnt_value)");
+}	
 
 my %new_list = ();
 foreach my $sample_name (sort keys %files) {

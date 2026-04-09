@@ -74,6 +74,7 @@ my $high_conf = ($hc)? "true" : "false";
 foreach my $pid (keys %data) {	
 	my $var_dir = "$out_dir/$pid/variants";
 	system("mkdir -p $var_dir");
+	system("rm $var_dir/*.tsv");
 	my @rows = @{$data{$pid}};
 	my %types = ();
 	for my $r(@rows) {
@@ -93,6 +94,7 @@ foreach my $pid (keys %data) {
 		system("grep -v '^Sample ID' $var_dir/$pid.$type.txt.tmp >> $var_dir/$pid.$type.txt");
 		system("zip -j $var_dir/$pid.$type.zip $var_dir/*.$type.tsv");
 		system("zip -j $var_dir/$pid.$type.merged.zip $var_dir/$pid.$type.txt");
+		system("rm $var_dir/$pid.$type.txt.tmp");
 	}
 	#print("$cmd\n");
 	#system($cmd);
