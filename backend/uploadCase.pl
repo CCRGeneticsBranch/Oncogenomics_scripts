@@ -266,7 +266,7 @@ if ($update_list_file ne '') {
 	while(<UPDATE_FILE>) {
 		chomp;
 		$update_list{$_} = '';
-		if (/(.*?)\/(.*?)\/successful.txt/) {
+		if (/(.*?)\/(.*?)\/successful.*\.txt/) {
 			my $failed = $dir."$1/$2/failed.txt";
 			system("rm -rf $failed");
 			$update_cases{$1}{$2} = '';
@@ -377,6 +377,7 @@ foreach my $patient_dir (@patient_dirs) {
 		
 		$case_dir = &formatDir($case_dir);
 		my $succss_file = $dir."$patient_id/$case_id/successful.txt";
+		my $succss_file_hg38 = $dir."$patient_id/$case_id/successful_hg38.txt";
 		my $failed_file = $dir."$patient_id/$case_id/failed.txt";
 		my $failed_file_del = $dir."$patient_id/$case_id/failed_delete.txt";
 		my $status = ($project_folder eq "clinomics")? 'pending' : 'passed';
@@ -404,7 +405,7 @@ foreach my $patient_dir (@patient_dirs) {
 		if ($update_list_file ne '') {
 			next if (!exists $update_cases{$patient_id}{$case_id});			
 			#if ($project_folder eq "clinomics") {
-				next unless (-e $succss_file);				
+				next unless (-e $succss_file || -e $succss_file_hg38);				
 			#}
 		}
 
@@ -414,10 +415,14 @@ foreach my $patient_dir (@patient_dirs) {
 		#my $last_mod_time = (stat ($succss_file))[9];
 		#print "file: $succss_file\n";
 		if ($load_type eq "all" || $load_type eq "version") {
+			my $genome_version = "hg19";
 			my $last_mod_time = POSIX::strftime('%Y-%m-%d %H:%M:%S', localtime(( stat "$dir$patient_id/$case_id" )[9]));
 			if (-e $succss_file) {
 				$last_mod_time = POSIX::strftime('%Y-%m-%d %H:%M:%S', localtime(( stat $succss_file )[9]));
-			} else {
+			} elsif (-e $succss_file_hg38) {
+				$last_mod_time = POSIX::strftime('%Y-%m-%d %H:%M:%S', localtime(( stat $succss_file )[9]));
+				$genome_version = "hg38";
+			}else {
 				$status = "not_successful";				
 			}
 			#print "last_mod_time: $last_mod_time\n";
@@ -437,12 +442,13 @@ foreach my $patient_dir (@patient_dirs) {
 				$version = $version_ret[0];
 			}
 			chomp $version;	
-			my @genome_version_ret = readpipe("$script_dir/getPipelineGenomeVersion.sh $case_dir");
-			my $genome_version = "hg19";
-			if ($#genome_version_ret >= 0) {
-				$genome_version = $genome_version_ret[0];
-			}
-			chomp $genome_version;
+			# We use successful.txt instead
+			#my @genome_version_ret = readpipe("$script_dir/getPipelineGenomeVersion.sh $case_dir");
+			#my $genome_version = "hg19";
+			#if ($#genome_version_ret >= 0) {
+			#	$genome_version = $genome_version_ret[0];
+			#}
+			#chomp $genome_version;
 			my $convert_time_fun = "TO_TIMESTAMP";
 			my $date_format = "YYYY-MM-DD HH24:MI:SS";
 			if ($db_type eq "mysql") {

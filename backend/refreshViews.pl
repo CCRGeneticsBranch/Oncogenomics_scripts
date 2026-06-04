@@ -48,6 +48,11 @@ GetOptions (
   's' => \$show_sql
 );
 
+my $dbh = getDBI();
+my $db_type = getDBType();
+my $sid = getDBSID();
+my $host = getDBHost();
+
 my $cases = <<'end';
 select distinct c.*,s.case_name from sample_case_mapping s,processed_cases c where s.patient_id=c.patient_id and s.case_id=c.case_id;
 end
@@ -85,7 +90,11 @@ select project_id, gene,type,'germline' as tier,germline_level as tier_type, cou
   group by project_id,gene,type,somatic_level;
 end
 
-my $project_mview = <<'end';
+my $version = "(select listagg(distinct genome_version, ',') within group (order by genome_version) from project_cases s, cases c where s.patient_id=c.patient_id and s.case_id=c.case_id and p1.id=s.project_id group by s.project_id) as version";
+if ($db_type eq "mysql") {
+    $version = "(select group_concat(distinct genome_version) from project_cases s, cases c where s.patient_id=c.patient_id and s.case_id=c.case_id and p1.id=s.project_id group by s.project_id) as version";
+  }
+my $project_mview = <<end;
 select distinct id,name,description,ispublic,patients,cases,samples,processed_patients,processed_cases,version,survival,exome,panel,rnaseq,whole_genome,chipseq,hic,status,user_id,created_by,updated_at from 
         (select p1.id, p1.name, p1.description, p1.ispublic, 
           (select count(distinct patient_id) from project_cases s where p1.id=s.project_id) as patients,
@@ -93,7 +102,7 @@ select distinct id,name,description,ispublic,patients,cases,samples,processed_pa
                   (select count(distinct sample_id) from project_samples s where p1.id=s.project_id) as samples,
           (select count(distinct patient_id) from project_processed_cases s where p1.id=s.project_id) as processed_patients,
                   (select count(distinct case_id) from project_processed_cases s where p1.id=s.project_id) as processed_cases,
-                  version,
+          $version,
           (select count(distinct c1.patient_id) from project_patients c1, patient_details c2 where p1.id=c1.project_id and c1.patient_id=c2.patient_id and class='overall_survival') as survival,
           (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='Exome') as exome,
           (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='Panel') as panel,
@@ -352,11 +361,6 @@ my %var_sample_avia_oc_indexes = ( "var_samle_avia_oc_coord" => "chromosome, sta
 if (!$refresh_all && !$do_cnv && !$do_prj_summary && !$do_avia && !$do_avia_full && !$do_cohort && !$do_genotyping) {
     die "please specifiy options!\n$usage";
 }
-
-my $dbh = getDBI();
-my $db_type = getDBType();
-my $sid = getDBSID();
-my $host = getDBHost();
 
 
 if ($refresh_all || $do_prj_summary) {

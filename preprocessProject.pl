@@ -46,7 +46,8 @@ GetOptions (
 my $script_dir = abs_path(dirname(__FILE__));
 my $data_dir = abs_path($script_dir."/../../storage/ProcessedResults");
 #my $annotation_file = abs_path($script_dir."/../ref/RSEM/gencode.v19.annotation.txt");
-my $annotation_file = abs_path($script_dir."/../ref/RSEM/gencode.v36lift37.annotation.txt");
+my $annotation_file_hg19 = abs_path($script_dir."/../ref/RSEM/gencode.v36lift37.annotation.txt");
+my $annotation_file_hg38 = abs_path($script_dir."/../ref/RSEM/gencode.v44.annotation.txt");
 
 if (!$project_id) {
 	die "Some parameters are missing\n$usage";
@@ -78,8 +79,7 @@ $dbh->disconnect();
 
 sub process {
 	my ($type, $level) = @_;
-	my $sql_prj = "select name, version from projects where id=$project_id";
-	my $sql_samples = "select distinct s.sample_id, s.sample_name, s.sample_alias, c.patient_id, c.case_id, c.path, s.library_type, s.tissue_type from project_samples p,samples s, sample_cases sc, cases c where sc.sample_id = s.sample_id and s.exp_type='RNAseq' and p.project_id=$project_id and p.sample_id=s.sample_id and sc.case_id=c.case_id and sc.patient_id=c.patient_id and not exists(select * from sample_details d where s.sample_id=d.sample_id and attr_name='status' and attr_value='Failed') order by s.sample_id";
+	my $sql_prj = "select name, version from project_mview where id=$project_id";
 	my %data = ();
 	my %targets = ();
 	my %lib_types = ();
@@ -88,134 +88,144 @@ sub process {
 	my %sample_names = ();	
 	my $start = time;
 	my $sth_prj = $dbh->prepare($sql_prj);
-	my $sth_samples = $dbh->prepare($sql_samples);
 	$sth_prj->execute();
 	my $project_name;
 
-	my $version = "";
+	my $version = "hg19";
 	($project_name, $version) = $sth_prj->fetchrow_array;
 	if (!$version) {
-		$version = "19";
+		$version = "hg19";
 	}
+
+	my @genomes = split(/,/, $version);
 
 	$sth_prj->finish();
 	if (!$project_name) {
 		print "Project $project_id not found!\n";
 		return;
 	}
-	print "=> Processing project: $project_name..., level: $level\n";
-	my $exp_list_file = "$out_dir/exp_list-$type-$level.tsv";
-	open(EXP_LIST_FILE, ">$exp_list_file") or die "Cannot write file $exp_list_file";
+	foreach my $genome(@genomes) {
+		print "=> Processing project: $project_name, genome: $genome, level: $level\n";
+		my $sql_samples = "select distinct s.sample_id, s.sample_name, s.sample_alias, c.patient_id, c.case_id, c.path, s.library_type, s.tissue_type from project_samples p,samples s, sample_cases sc, cases c where sc.sample_id = s.sample_id and s.exp_type='RNAseq' and p.project_id=$project_id and p.sample_id=s.sample_id and sc.case_id=c.case_id and c.genome_version='$genome' and sc.patient_id=c.patient_id and not exists(select * from sample_details d where s.sample_id=d.sample_id and attr_name='status' and attr_value='Failed') order by s.sample_id";
+		my $sth_samples = $dbh->prepare($sql_samples);
 	
-	$sth_samples->execute();
-	my $total_samples = 0;	
-	while (my ($sample_id, $sample_name, $sample_alias, $patient_id, $case_id, $path, $lib_type, $tissue_type) = $sth_samples->fetchrow_array) {
-		#save coding symbol to hash
-		my $path = $data_dir."/$path/$patient_id/$case_id";		
-		$sample_alias_mapping{$sample_alias} = $sample_id;		
-		$sample_id_mapping{$sample_id} = $sample_name;
-		$sample_id_alias_mapping{$sample_id} = $sample_alias;
-		$lib_types{$sample_id} = (lc($lib_type) eq "polya");
-		if ( $lib_type =~ /polya/i ) {
-			$lib_type = "polya";
-		}
-		if ( $lib_type =~ /ribo/i ) {
-			$lib_type = "ribozero";
-		}
-		if ( $lib_type =~ /access/i ) {
-			$lib_type = "access";
-		}
+		my $exp_list_file = "$out_dir/exp_list-$type-$level-$genome.tsv";
+		open(EXP_LIST_FILE, ">$exp_list_file") or die "Cannot write file $exp_list_file";
 		
-		$tissue_types{$sample_id} = $tissue_type;
-		my $expfile = &getExpFile($path, $sample_id, $sample_name, $type, $level);
-		if ($expfile ne "" ) {
-			if (!exists $sample_name_mapping{$sample_name}) {				
-				$sample_name_mapping{$sample_name} = $sample_id;	
-				print EXP_LIST_FILE "$sample_id\t$sample_name\t$expfile\t$lib_type\t$tissue_type\n";
-				my $count_file = $expfile.".count.txt";
-				my $tpm_file = $expfile.".tpm.txt";				
-				system("cut -f1,5 $expfile > $count_file");
-				system("cut -f1,6 $expfile > $tpm_file");		
-				$total_samples++;					
+		$sth_samples->execute();
+		my $total_samples = 0;
+		my $annotation_file = $annotation_file_hg19;
+		if ($genome eq "hg38") {
+			$annotation_file = $annotation_file_hg38;
+		}
+		while (my ($sample_id, $sample_name, $sample_alias, $patient_id, $case_id, $path, $lib_type, $tissue_type) = $sth_samples->fetchrow_array) {
+			#save coding symbol to hash
+			my $path = $data_dir."/$path/$patient_id/$case_id";		
+			$sample_alias_mapping{$sample_alias} = $sample_id;		
+			$sample_id_mapping{$sample_id} = $sample_name;
+			$sample_id_alias_mapping{$sample_id} = $sample_alias;
+			$lib_types{$sample_id} = (lc($lib_type) eq "polya");
+			if ( $lib_type =~ /polya/i ) {
+				$lib_type = "polya";
 			}
-		} else {
-			print("RSEM file not found: $path. Sample: $sample_id\n");			
-		}		
-	} # end of while
+			if ( $lib_type =~ /ribo/i ) {
+				$lib_type = "ribozero";
+			}
+			if ( $lib_type =~ /access/i ) {
+				$lib_type = "access";
+			}
+			
+			$tissue_types{$sample_id} = $tissue_type;
+			my $expfile = &getExpFile($path, $sample_id, $sample_name, $type, $level);
+			if ($expfile ne "" ) {
+				if (!exists $sample_name_mapping{$sample_name}) {				
+					$sample_name_mapping{$sample_name} = $sample_id;	
+					print EXP_LIST_FILE "$sample_id\t$sample_name\t$expfile\t$lib_type\t$tissue_type\n";
+					my $count_file = $expfile.".count.txt";
+					my $tpm_file = $expfile.".tpm.txt";				
+					system("cut -f1,5 $expfile > $count_file");
+					system("cut -f1,6 $expfile > $tpm_file");		
+					$total_samples++;					
+				}
+			} else {
+				print("RSEM file not found: $path. Sample: $sample_id\n");			
+			}		
+		} # end of while
 
-	my $dry_run = 0;
-	close(EXP_LIST_FILE);	
-	$sth_samples->finish();
-	print("Total samples: $total_samples\n");
-	my $size = keys %sample_name_mapping;
-	if ( $size == 0 ) {
-		print "No RNAseq data\n";
-		$dbh->disconnect();
-		exit(0);
-	}
-
-	$dbh->do("update projects set status=1 where id=$project_id");
-	$dbh->commit();	
-
-	my $cmd = "Rscript $script_dir/tmmNormalize.r $exp_list_file $annotation_file $out_dir";
-	print "TMM normalizing...\n";
-	print "Command: $cmd\n";
-	if (!$dry_run) {
-		system($cmd);	
-	}		
-
-	my $duration = time - $start;
-	print "time (TMM): $duration s\n";
-	
-	print "===> Processing type: $type, level: $level ...\n";
-	$start = time;
-		
-	my @norm_types = ('tmm-rpkm','tpm');
-	
-	if ($matrix_file) {
-		system("cp $matrix_file $out_dir/expression.tmm-rpkm.tsv");
-	}
-
-	foreach my $norm_type (@norm_types) {
-		print "inserting $norm_type\n";
-		if (!$dry_run) {			
-			&insertProjectValues("$out_dir/expression.$norm_type.tsv", $norm_type);
+		my $dry_run = 0;
+		close(EXP_LIST_FILE);	
+		$sth_samples->finish();
+		print("Total samples: $total_samples\n");
+		my $size = keys %sample_name_mapping;
+		if ( $size == 0 ) {
+			print "No RNAseq data\n";
+			$dbh->disconnect();
+			exit(0);
 		}
-	}
 
-	$duration = time - $start;
-	print "time (Insert DB): $duration s\n";
-	$start = time;
-	#save value to text file
-	my $min_value = 0;	
+		$dbh->do("update projects set status=1 where id=$project_id");
+		$dbh->commit();	
 
-	$dbh->commit();
+		my $cmd = "Rscript $script_dir/tmmNormalize.r $exp_list_file $annotation_file $out_dir $genome";
+		print "TMM normalizing...\n";
+		print "Command: $cmd\n";
+		if (!$dry_run) {
+			system($cmd);	
+		}		
 
-	#run R to calculate stats
-	#my $stat_file = "$out_dir/$type-$level-stat";
-	#my $loading_file = "$out_dir/$type-$level-loading";
-	#my $coord_file = "$out_dir/$type-$level-coord";
-	#my $rds_file = "$out_dir/$type-$level-coding";
-	#my $coord_tmp_file = "$out_dir/$type-$level-coord_tmp";
-	#my $std_file = "$out_dir/$type-$level-std";
+		my $duration = time - $start;
+		print "time (TMM): $duration s\n";
 		
-	#my $file_prefix = "$out_dir/$type-$level";
-	#foreach my $norm_type (@norm_types) {
-		#foreach my $library_type (@library_types) {
-		#print("runStat: $library_type, $norm_type\n");
-			#&runStat($library_type, $norm_type);			
+		print "===> Processing type: $type, level: $level ...\n";
+		$start = time;
+			
+		my @norm_types = ('tmm-rpkm','tpm');
+		
+		if ($matrix_file) {
+			system("cp $matrix_file $out_dir/expression.tmm-rpkm.$genome.tsv");
+		}
+
+		foreach my $norm_type (@norm_types) {
+			print "inserting $norm_type\n";
+			if (!$dry_run) {			
+				&insertProjectValues("$out_dir/expression.$norm_type.$genome.tsv", $norm_type);
+			}
+		}
+
+		$duration = time - $start;
+		print "time (Insert DB): $duration s\n";
+		$start = time;
+		#save value to text file
+		my $min_value = 0;	
+
+		$dbh->commit();
+
+		#run R to calculate stats
+		#my $stat_file = "$out_dir/$type-$level-stat";
+		#my $loading_file = "$out_dir/$type-$level-loading";
+		#my $coord_file = "$out_dir/$type-$level-coord";
+		#my $rds_file = "$out_dir/$type-$level-coding";
+		#my $coord_tmp_file = "$out_dir/$type-$level-coord_tmp";
+		#my $std_file = "$out_dir/$type-$level-std";
+			
+		#my $file_prefix = "$out_dir/$type-$level";
+		#foreach my $norm_type (@norm_types) {
+			#foreach my $library_type (@library_types) {
+			#print("runStat: $library_type, $norm_type\n");
+				#&runStat($library_type, $norm_type);			
+			#}
 		#}
-	#}
-	
-	$duration = time - $start;
-	print "time(runStat): $duration s\n";
-	$dbh->do("update projects set status=2 where id=$project_id");
-	$dbh->commit();	
+		
+		$duration = time - $start;
+		print "time(runStat): $duration s\n";
+		$dbh->do("update projects set status=2 where id=$project_id");
+		$dbh->commit();	
+		system("mkdir -p $out_dir/cor");
+		system("mkdir -p $out_dir/survival");
+		system("chmod g+w $out_dir/cor");
+		system("mkdir -p $out_dir/survival");
+	}
 	$dbh->disconnect();
-	system("mkdir -p $out_dir/cor");
-	system("mkdir -p $out_dir/survival");
-	system("chmod g+w $out_dir/cor");
-	system("mkdir -p $out_dir/survival");
 }
 
 sub runStat {

@@ -58,6 +58,7 @@ Args<-commandArgs(trailingOnly=T)
 exp_list_file<-Args[1]
 annotation_file <- Args[2]
 out_dir <- Args[3]
+genome <- Args[4]
 
 options(matrixStats.useNames.NA = "deprecated")
 
@@ -96,10 +97,10 @@ for (i in c(1:length(exp_list$file))) {
   }
   if (substr(data$gene_id[1], 1, 4) == "ENSG") {    
     #count$gene_id <- gsub("\\..*","",count$gene_id)
-    count$gene_id <- gsub("\\.[0-9]*_[0-9]*","",count$gene_id)
+    count$gene_id <- gsub("\\..*","",count$gene_id)
     count <- count %>% group_by(gene_id) %>% summarise(expected_count = sum(expected_count))
     #tpm$gene_id <- gsub("\\..*","",tpm$gene_id)
-    tpm$gene_id <- gsub("\\.[0-9]*_[0-9]*","",tpm$gene_id)
+    tpm$gene_id <- gsub("\\..*","",tpm$gene_id)
   tpm <- tpm %>% group_by(gene_id) %>% summarise(TPM = sum(TPM))
     count_mats <- count_mats %>% inner_join(count, by=c("gene_id"="gene_id"))
     tpm_mats <- tpm_mats %>% inner_join(tpm, by=c("gene_id"="gene_id"))
@@ -114,21 +115,21 @@ for (i in c(1:length(exp_list$file))) {
   tissue_type[length(tissue_type)+1] <- t
 }
 
-write.table(count_mats, paste(out_dir,"/expression.count.tsv", sep= ""), sep="\t",row.names = F, col.names=T, quote = FALSE)
-write.table(tpm_mats, paste(out_dir,"/expression.tpm.tsv", sep= ""), sep="\t",row.names = F, col.names=T, quote = FALSE)
+write.table(count_mats, paste0(out_dir,"/expression.count.", genome, ".tsv"), sep="\t",row.names = F, col.names=T, quote = FALSE)
+write.table(tpm_mats, paste0(out_dir,"/expression.tpm.", genome, ".tsv"), sep="\t",row.names = F, col.names=T, quote = FALSE)
 
 tpm_coding <- tpm_mats %>% dplyr::filter(gene_type == "protein_coding")
 coding_ids <- tpm_coding$gene_id
 tpm_mats <- NULL
 tpm_coding <- tpm_coding[,10:ncol(tpm_coding)]
 rownames(tpm_coding) <- coding_ids
-write.table(tpm_coding, paste(out_dir,"/expression.tpm.coding.tsv", sep= ""), sep="\t",row.names = T, col.names=NA, quote = FALSE)
+write.table(tpm_coding, paste(out_dir,"/expression.tpm.coding.", genome, ".tsv", sep= ""), sep="\t",row.names = T, col.names=NA, quote = FALSE)
 tpm_coding_zscore <- round(t(scale(t(tpm_coding))),2)
-write.table(tpm_coding_zscore, paste(out_dir,"/expression.tpm.coding.zscore.tsv", sep= ""), sep="\t",row.names = T, col.names=NA, quote = FALSE)
+write.table(tpm_coding_zscore, paste(out_dir,"/expression.tpm.coding.zscore.", genome, ".tsv", sep= ""), sep="\t",row.names = T, col.names=NA, quote = FALSE)
 tpm_coding_rank <- as.data.frame(t(apply(tpm_coding, 1, function(x) rank(-x, ties.method="min"))))
 colnames(tpm_coding_rank) <- colnames(tpm_coding)
-write.table(tpm_coding_rank, paste(out_dir,"/expression.tpm.coding.rank.tsv", sep= ""), sep="\t",row.names = T, col.names=NA, quote = FALSE)
-saveRDS(tpm_coding, paste(out_dir,"/expression.coding.tpm.RDS", sep= ""))
+write.table(tpm_coding_rank, paste(out_dir,"/expression.tpm.coding.rank.", genome, ".tsv", sep= ""), sep="\t",row.names = T, col.names=NA, quote = FALSE)
+saveRDS(tpm_coding, paste(out_dir,"/expression.coding.tpm.", genome, ".RDS", sep= ""))
 tpm_coding <- NULL
 gc()
 count_mats <- count_mats %>% dplyr::filter(gene_type == "protein_coding")
@@ -151,7 +152,7 @@ if (!is.null(tissue_type) && nlevels(tissue_type) > 1) {
 }
 v <- voom(dge, design, plot=F)
 lcpm <- as.data.frame(v$E)
-runPCA(lcpm, paste(out_dir,"/pca",sep=""))
+runPCA(lcpm, paste(out_dir,"/pca.", genome,sep=""))
 lcpm$gene_id <- rownames(lcpm)
 lcpm <- lcpm %>% dplyr::inner_join(genes_anno, by=c("gene_id"="gene_id"))
 lcpm$gene_id <- NULL
@@ -188,22 +189,22 @@ if (!is.null(batch) && nlevels(batch) > 1) {
 rpkm <- as.data.frame(round(rpkm,2))
 rpkm$gene_id <- rownames(rpkm)
 rpkm <- anno %>% inner_join(rpkm, by=c("gene_id"="gene_id"))
-write.table(rpkm, paste(out_dir,"/expression.tmm-rpkm.tsv", sep= ""), sep="\t",row.names = F, col.names=T, quote = FALSE)
+write.table(rpkm, paste(out_dir,"/expression.tmm-rpkm.", genome, ".tsv", sep= ""), sep="\t",row.names = F, col.names=T, quote = FALSE)
 rpkm_coding <- rpkm %>% filter(gene_type == "protein_coding")
 coding_ids <- rpkm_coding$gene_id
 rpkm_coding <- rpkm_coding[,10:ncol(rpkm_coding)]
 rownames(rpkm_coding) <- coding_ids
-saveRDS(rpkm_coding, paste(out_dir,"/expression.coding.tmm-rpkm.RDS", sep= ""))
+saveRDS(rpkm_coding, paste(out_dir,"/expression.coding.tmm-rpkm.", genome, ".RDS", sep= ""))
 rpkm <- NULL
 rpkm_coding <- NULL
 gc()
 #runPCA(lcpm, paste(out_dir,"/pca",sep=""))
 
-write.table(genes_anno, paste(out_dir,"/genes.tsv", sep= ""), sep="\t",row.names = F, col.names=T, quote = FALSE)
-write.table(lcpm, paste(out_dir,"/expression.lcpm.tsv", sep= ""), sep="\t",row.names = T, col.names=NA, quote = FALSE)
+write.table(genes_anno, paste(out_dir,"/genes.", genome, ".tsv", sep= ""), sep="\t",row.names = F, col.names=T, quote = FALSE)
+write.table(lcpm, paste(out_dir,"/expression.lcpm.", genome, ".tsv", sep= ""), sep="\t",row.names = T, col.names=NA, quote = FALSE)
 gmts <- c("c2.all.v2024.1.Hs.symbols.gmt","c6.all.v2024.1.Hs.symbols.gmt","CytoSig_Top250.gmt","c7.immunesigdb.v2024.1.Hs.symbols.gmt","h.all.v2024.1.Hs.symbols.gmt","NCI_GeneSet_v38.gmt")
 methods <- c("gsva", "ssgsea", "zscore")
-gsva_out_dir <- paste0(out_dir, "/gsva")
+gsva_out_dir <- paste0(out_dir, "/gsva.", genome)
 dir.create(gsva_out_dir, showWarnings = FALSE)
 for (gmt in gmts) {
   gmt_file <- paste0(out_dir, "/../../../app/ref/msigdb/", gmt)
