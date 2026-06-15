@@ -57,9 +57,9 @@ my $dbh = getDBI();
 my $sid = getDBSID();
 
 my $sql_insert_stat = "insert into project_stat values(?,?,?,?,?,?,?,?)";
-my $sql_delete_project_value = "delete from project_values where project_id=? and target_type=? and target_level=? and value_type=?";
+my $sql_delete_project_value = "delete from project_values where project_id=? and genome_version=? and target_level=? and value_type=?";
 my $sql_insert_project_value = "insert into project_values values(?,?,?,?,?,?,?,?)";
-my $sql_delete_project_expression = "delete from project_expression where project_id=? and target_type=? and target_level=? and value_type=?";
+my $sql_delete_project_expression = "delete from project_expression where project_id=? and genome_version=? and target_level=? and value_type=?";
 my $sql_insert_project_expression = "insert into project_expression values(?,?,?,?,?)";
 
 my $sth_insert_stat = $dbh->prepare($sql_insert_stat);
@@ -159,8 +159,9 @@ sub process {
 		my $size = keys %sample_name_mapping;
 		if ( $size == 0 ) {
 			print "No RNAseq data\n";
-			$dbh->disconnect();
-			exit(0);
+			next;
+			#$dbh->disconnect();
+			#exit(0);
 		}
 
 		$dbh->do("update projects set status=1 where id=$project_id");
@@ -188,7 +189,7 @@ sub process {
 		foreach my $norm_type (@norm_types) {
 			print "inserting $norm_type\n";
 			if (!$dry_run) {			
-				&insertProjectValues("$out_dir/expression.$norm_type.$genome.tsv", $norm_type);
+				&insertProjectValues("$out_dir/expression.$norm_type.$genome.tsv", $norm_type, $genome);
 			}
 		}
 
@@ -297,7 +298,7 @@ sub runStat {
 }
 
 sub insertProjectValues {
-	my ($exp_file, $norm_type) = @_;
+	my ($exp_file, $norm_type, $genome) = @_;
 	open(FILE, "$exp_file") or die "Cannot open file $exp_file";
 	my $num_anno_fields = 9;
 	my $header = <FILE>;
@@ -307,15 +308,15 @@ sub insertProjectValues {
 	my @sample_names = ();
 	my @sample_alias_list = ();
 	#splice(@sorted_samples, 0, 1);
-	$sth_delete_project_expression->execute($project_id, $type, $level, $norm_type);
-	foreach my $sample_id (@sample_ids) {
-		next if ($sample_id eq "");
-		$sth_insert_project_expression->execute($project_id, $sample_id, $type, $level, $norm_type);
-	}
+	#$sth_delete_project_expression->execute($project_id, $type, $level, $norm_type);
+	#foreach my $sample_id (@sample_ids) {
+	#	next if ($sample_id eq "");
+	#	$sth_insert_project_expression->execute($project_id, $sample_id, $type, $level, $norm_type);
+	#}
 	#my $sample_name_list = join("\t", @sorted_samples);
 	my $sample_name_list = join("\t", @sample_alias_list);
-	$sth_delete_project_value->execute($project_id, $type, $level, $norm_type);	
-	$sth_insert_project_value->execute($project_id, "_list", "_list", "_list", $type, $level, $norm_type, join(",", @sample_ids));
+	$sth_delete_project_value->execute($project_id, $genome, $level, $norm_type);	
+	$sth_insert_project_value->execute($project_id, "_list", "_list", "_list", $genome, $level, $norm_type, join(",", @sample_ids));
 	#my $sample_list = join("\t", @sorted_samples);
 	my $sample_alias_list_str = join("\t", @sample_alias_list);
 	my $rec = 0;
@@ -348,7 +349,7 @@ sub insertProjectValues {
 			#if ($rec % 2000 == 0) {
 			#	$dbh->commit();
 			#}			
-			$sth_insert_project_value->execute($project_id, $target, $gene, $symbol, $type, $level, $norm_type, $value_list); 
+			$sth_insert_project_value->execute($project_id, $target, $gene, $symbol, $genome, $level, $norm_type, $value_list); 
 		}
 	}
 	close(FILE);	
