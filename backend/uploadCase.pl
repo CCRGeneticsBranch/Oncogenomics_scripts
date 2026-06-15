@@ -371,6 +371,7 @@ foreach my $patient_dir (@patient_dirs) {
 	my @case_dirs = grep { -d } glob $patient_dir."*";
 	foreach my $case_dir (@case_dirs) {
 		my $case_id = basename($case_dir);
+		my $genome_version = "hg19";
 		if ($target_case) {
 			next if ($case_id ne $target_case);
 		}
@@ -415,7 +416,6 @@ foreach my $patient_dir (@patient_dirs) {
 		#my $last_mod_time = (stat ($succss_file))[9];
 		#print "file: $succss_file\n";
 		if ($load_type eq "all" || $load_type eq "version") {
-			my $genome_version = "hg19";
 			my $last_mod_time = POSIX::strftime('%Y-%m-%d %H:%M:%S', localtime(( stat "$dir$patient_id/$case_id" )[9]));
 			if (-e $succss_file) {
 				$last_mod_time = POSIX::strftime('%Y-%m-%d %H:%M:%S', localtime(( stat $succss_file )[9]));
@@ -701,7 +701,7 @@ foreach my $patient_dir (@patient_dirs) {
 				$d = &formatDir($d);
 				my $folder_name = basename($d);				
 				try {					
-					my $ret = &insertCNV($dir, $folder_name, $patient_id, $case_id);					
+					my $ret = &insertCNV($dir, $folder_name, $patient_id, $case_id, $genome_version);					
 					my $rettso = &insertCNVTSO500($dir, $folder_name, $patient_id, $case_id);
 					if ($ret || $rettso) {
 						$inserted = 1;
@@ -724,7 +724,7 @@ foreach my $patient_dir (@patient_dirs) {
 				$d = &formatDir($d);
 				my $folder_name = basename($d);				
 				try {					
-					my $retkit = &insertCNVKit($dir, $folder_name, $patient_id, $case_id);
+					my $retkit = &insertCNVKit($dir, $folder_name, $patient_id, $case_id, $genome_version);
 					my $retkitgene = &insertCNVKitGene($dir, $folder_name, $patient_id, $case_id);					
 					if ($retkit || $retkitgene) {
 						$inserted = 1;
@@ -1234,7 +1234,7 @@ sub insertBurden {
 }
 
 sub insertCNV {
-	my ($dir, $folder_name, $patient_id, $case_id) = @_;	
+	my ($dir, $folder_name, $patient_id, $case_id, $genome_version) = @_;	
 	my $cnv_dir = $dir.$patient_id."/$case_id/$folder_name/sequenza";
 	my $filename = "$cnv_dir/$folder_name/$folder_name"."_segments.txt";
 	my $gene_segment_filename = "$cnv_dir/$folder_name".".segments.genes.bed";
@@ -1276,7 +1276,7 @@ sub insertCNV {
 	$dbh->commit();
 	#system("$script_dir/run_reconCNV_sequenza.sh $filename");
 	#intersect gene file with segment
-	system("export AWS=$aws;$script_dir/gen_sequenza_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed");
+	system("export AWS=$aws;$script_dir/gen_sequenza_segments.sh $filename $script_dir/../../ref/${genome_version}.genes.coding.bed");
 	if ( -e $gene_segment_filename) {
 		open (GENE_SEG_FILE, "$gene_segment_filename");
 		print_log("processing sequenza gene segments: $gene_segment_filename");
@@ -1297,7 +1297,7 @@ sub insertCNV {
 		$dbh->commit();
 	}
 	#get gene level file. Generate gene level file only if the pipeline does not generate one
-	system("export AWS=$aws;$script_dir/gen_sequenza_gene_level.sh $filename $script_dir/../../ref/hg19.genes.coding.bed");
+	system("export AWS=$aws;$script_dir/gen_sequenza_gene_level.sh $filename $script_dir/../../ref/${genome_version}.genes.coding.bed");
 	if ( -e $gene_level_filename) {
 		open (GENE_LEVEL_FILE, "$gene_level_filename");
 		print_log("processing sequenza gene level: $gene_level_filename");
@@ -1321,7 +1321,7 @@ sub insertCNV {
 }
 
 sub insertCNVKit {
-	my ($dir, $folder_name, $patient_id, $case_id) = @_;	
+	my ($dir, $folder_name, $patient_id, $case_id, $genome_version) = @_;	
 	my $cnv_dir = $dir.$patient_id."/$case_id/$folder_name/cnvkit";
 	my $filename = "$cnv_dir/$folder_name".".call.cns";
 	my $ratio_filename = "$cnv_dir/$folder_name".".cnr";
@@ -1364,7 +1364,7 @@ sub insertCNVKit {
 	if ($aws eq "false") {
 		system("export CONDA_PATH=$conda_path;export RECONCNV_PATH=$reconCNV_path;$script_dir/run_reconCNV.sh $ratio_filename $filename");
 	}
-	system("export AWS=$aws;$script_dir/gen_cnvkit_segments.sh $filename $script_dir/../../ref/hg19.genes.coding.bed $segment_file_type");
+	system("export AWS=$aws;$script_dir/gen_cnvkit_segments.sh $filename $script_dir/../../ref/${genome_version}.genes.coding.bed $segment_file_type");
 	if ( -e $gene_segment_filename) {
 		open (GENE_SEG_FILE, "$gene_segment_filename");
 		print_log("processing CNVKit gene segments: $gene_segment_filename");
