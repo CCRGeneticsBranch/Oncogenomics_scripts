@@ -83,14 +83,17 @@ for (i in c(1:nrow(meta))) {
 } # 1. Loop now closes correctly at the very end
 
 
-tpm_coding <- tpm_mats %>% dplyr::filter(gene_type == "protein_coding")
+#tpm_coding <- tpm_mats %>% dplyr::filter(gene_type == "protein_coding")
+tpm_coding <- tpm_mats
 tpm_coding <- tpm_coding[,c(8,10:ncol(tpm_coding))]
 tpm_coding <- as.data.frame(tpm_coding %>% dplyr::group_by(gene_name) %>% dplyr::summarise_all(list(mean)))
 rownames(tpm_coding) <- tpm_coding$gene_name
 tpm_coding$gene_name <- NULL
 tpm_coding <- round(log2(tpm_coding+1),3)
+tpm_selected <- tpm_coding[c('MALAT1','NEAT1'),]
 colnames(meta_mats) <- colnames(tpm_coding)
 tpm_coding <- as.data.frame(rbind(meta_mats[c(1,3,5,6),],tpm_coding))
-
+tpm_selected <- as.data.frame(rbind(meta_mats[c(1,3,5,6),],tpm_selected))
 write.table(tpm_coding, out_file, sep="\t", row.names = T, col.names=NA, quote = FALSE)
+write.table(tpm_selected, "/mnt/projects/CCR-JK-oncogenomics/static/data/javed/all_ribozero_samples_MALAT1_NEAT1_log2TPM.tsv, sep="\t", row.names = T, col.names=NA, quote = FALSE)
 

@@ -7,10 +7,7 @@ use Time::Piece;
 require(dirname(abs_path($0))."/../lib/Onco.pm");
 
 my $script_dir = abs_path(dirname(__FILE__));
-my $avia_path = abs_path($script_dir."/../../../avia/hg19");
-my $table_name="hg19_annot_oc";
-my $failed_file="$avia_path/failed.all.tsv";
-my $out_file;
+my $genome = "hg19";
 
 my $usage = <<__EOUSAGE__;
 
@@ -22,23 +19,20 @@ $0 [options]
 
 Options:
 
-  -t            Table name (default: $table_name)
-  -f            Unmapped list (default: $failed_file)
-  -o            Output file
+  -g            Genome (default: $genome)
   
 __EOUSAGE__
 
 
 
 GetOptions (
-	't=s' => \$table_name,
-  'f=s' => \$failed_file,
-  'o=s' => \$out_file
+	'g=s' => \$genome
 );
 
-if (!$out_file) {
-    die "Please specifiy options!\n$usage";
-}
+my $avia_path = abs_path($script_dir."/../../../avia/$genome");
+my $table_name="${genome}_annot_oc";
+my $failed_file="$avia_path/failed.all.tsv";
+my $out_file = "$avia_path/new_variants.tsv";
 
 my $dbh = getDBI();
 my $sid = getDBSID();
@@ -54,7 +48,7 @@ while(<FAILED_FILE>) {
 }
 
 print_log("Exporting to $out_file on $host ($sid)");
-my $sql = "select distinct chromosome,start_pos,end_pos,ref,alt from var_samples v where not exists(select * from $table_name a where v.chromosome=a.chr and v.start_pos=a.query_start and v.end_pos=a.query_end and v.ref=a.allele1 and v.alt=a.allele2) order by chromosome,start_pos,end_pos";
+my $sql = "select distinct chromosome,start_pos,end_pos,ref,alt from var_samples v, processed_cases c where v.patient_id=c.patient_id and v.case_id=c.case_id and c.genome_version='${genome}' and not exists(select * from $table_name a where v.chromosome=a.chr and v.start_pos=a.query_start and v.end_pos=a.query_end and v.ref=a.allele1 and v.alt=a.allele2) order by chromosome,start_pos,end_pos";
 my $sth_novel = $dbh->prepare($sql);
 $sth_novel->execute();
 open(OUT_FILE, ">$out_file") or die "Cannot open file $out_file";

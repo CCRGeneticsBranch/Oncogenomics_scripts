@@ -11,12 +11,11 @@ use Time::Piece;
 use Cwd 'abs_path';
 require(dirname(abs_path($0))."/../lib/Onco.pm");
 
-my $table_name="hg19_annot_oc";
+my $genome="hg19";
 my $has_header = 0;
 my $num_commit = -1;
+my $refresh_view = 0;
 my $script_dir = abs_path(dirname(__FILE__));
-my $avia_path = abs_path($script_dir."/../../../avia/hg19");
-my $input_file = $avia_path."/annotation.tsv";
 my $usage = <<__EOUSAGE__;
 
 Usage:
@@ -25,28 +24,26 @@ $0 [options]
 
 required options:
 
-  -i  <string>  Input text file (default: $input_file)
-  -t  <string>  Table name (default: $table_name)
-  -c            Has header
-  -n  <integer> Commit after <n> inserts (default: no early commits)
+  -g  <string>  Genome (default: $genome)
+  -r            Refresh view
   
 __EOUSAGE__
 
 
 
 GetOptions (
-  't=s' => \$table_name,
-  'i=s' => \$input_file,
-  'n=i' => \$num_commit,
-  'c' => \$has_header
+  'g=s' => \$genome,
+  'r' => \$refresh_view
 );
 
-if (!$input_file) {
-    die "Some parameters are missing\n$usage";
-}
+my $table_name="${genome}_annot_oc";
+my $avia_path = abs_path($script_dir."/../../../avia/${genome}");
+my $input_file = $avia_path."/annotation.tsv";
+
 
 #if file not found, exit
 if ( ! -f $input_file) {
+	print_log("Input file not found: $input_file");
 	exit 0;
 }
 
@@ -115,7 +112,9 @@ system("cat $avia_path/failed.tsv >> $avia_path/failed.all.tsv");
 close(IN_FILE);
 $dbh->commit();
 $dbh->disconnect();
-print_log("Refreshing var_sample_avia_oc");
-system("$script_dir/refreshViews.pl -v");
+if ($refresh_view) {
+	print_log("Refreshing var_sample_avia_oc");
+	system("$script_dir/refreshViews.pl -v");
+}
 
 

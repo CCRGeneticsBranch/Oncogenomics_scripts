@@ -26,6 +26,7 @@ echo "********** 3. Updating case ID **********" >> ${log_file}
 ${script_home}/updateVarCases.pl >> $log_file
 echo "********** 4. Exporting Update case ID **********" >> ${log_file}
 ${script_home}/export_new_variants.pl >> ${log_file}
+${script_home}/export_new_variants.pl -g 38>> ${log_file}
 echo "********** 5. Refreshing views **********" >> ${log_file}
 ${script_home}/refreshViews.pl -c -h >> ${log_file}
 echo "********** 6. Processing project data **********" >> ${log_file}
