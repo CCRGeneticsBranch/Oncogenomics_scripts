@@ -5,8 +5,8 @@ use warnings;
 use DBI;
 use Getopt::Long qw(GetOptions);
 use File::Basename;
-use LWP::Simple;
-use LWP::UserAgent;
+#use LWP::Simple;
+#use LWP::UserAgent;
 use Scalar::Util qw(looks_like_number);
 use Try::Tiny;
 use MIME::Lite; 
@@ -1514,7 +1514,10 @@ sub insertCNVTSO500 {
 		my $dup_del = $fields[4];
 		$dup_del=~s/<//;
 		$dup_del=~s/>//;
-		my $fc = $fields[5];		
+		my $fc = $fields[5];
+		if (defined $fc && $fc =~ /^-?(?:\d+\.?\d*|\.\d+)$/) {
+    	$fc = sprintf("%.3f", $fc);
+		}		
 		$sth_cnvtso->execute($patient_id, $case_id, $sample_id, $chr, $start_pos, $end_pos, $gene, $dup_del, $fc);		
 	}
 	$dbh->commit();

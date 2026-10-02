@@ -6,7 +6,8 @@ qc_file=${case_dir}/qc/${qc_file}
 #echo $qc_file
 if [ -f $qc_file ]; then
 	#echo "perl -ne '($v)=$_=~/\"pipeline_version\": \"(.*?)\",/;print $v;' $qc_file"
-	version=`perl -ne '($v)=$_=~/\"pipeline_version\": \"(.*?)\",/;chomp $v;print $v;' $qc_file`
+	version=`perl -ne '($v)=$_=~/\"pipeline_version\":\s*"([^"]+)"/;chomp $v;print $v;' $qc_file`
+	#version=`perl -ne 'print "$1\n" if /"pipeline_version":\s*"([^"]+)"/;chomp $v;print $v;' $qc_file`
 fi
 if [[ "$version" == "" ]]; then
 	version=`grep Pipeline -A1 $qc_file | tail -1 | cut -d':' -f2 | tr -d ' '`
