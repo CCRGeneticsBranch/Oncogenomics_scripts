@@ -14,6 +14,7 @@ my $script_dir = dirname(__FILE__);
 my $app_dir=abs_path($script_dir."/../../..");
 
 my $patient_id;
+my $genome_version;
 my $replace=0;
 
 my $usage = <<__EOUSAGE__;
@@ -25,6 +26,7 @@ $0 [options]
 Options:
 
   -p  <string>  patient ID
+  -g  <string>  genome
   -r            replace old data
   
 __EOUSAGE__
@@ -33,6 +35,7 @@ __EOUSAGE__
 
 GetOptions (
   'p=s' => \$patient_id,
+  'g=s' => \$genome_version,
   'r' => \$replace
 );
 
@@ -44,7 +47,7 @@ if (!$patient_id) {
 my $dbh = getDBI();
 my $cmd = "";
 
-my $sth_gt = $dbh->prepare("select patient_id from patient_genotyping where patient_id='$patient_id'");
+my $sth_gt = $dbh->prepare("select patient_id from patient_genotyping where patient_id='$patient_id' and genome_version='$genome_version'");
 $sth_gt->execute();
 if ($sth_gt->fetchrow_array) {
 	if (!$replace) {
@@ -53,11 +56,12 @@ if ($sth_gt->fetchrow_array) {
 		$dbh->disconnect();
 		exit(0);
 	} else {
-		$dbh->do("delete patient_genotyping where patient_id = '$patient_id'");
+		$dbh->do("delete patient_genotyping where patient_id = '$patient_id' and genome_version='$genome_version'");
 	}
 }
 $sth_gt->finish;
-my $sql = "select distinct path,sample_id,sample_name,case_id from processed_sample_cases where patient_id='$patient_id' order by sample_id";
+#my $sql = "select distinct path,sample_id,sample_name,case_id from processed_sample_cases where patient_id='$patient_id' order by sample_id";
+my $sql = "select distinct p.path,p.sample_id,p.sample_name,p.case_id from processed_sample_cases p,cases c where p.patient_id='$patient_id' and p.patient_id=c.patient_id and p.case_id=c.case_id and c.genome_version='$genome_version' order by sample_id";
 my $sth_samples = $dbh->prepare($sql);
 my %cnt = ();
 $sth_samples->execute();
@@ -151,8 +155,8 @@ foreach my $sample1 (@sample_list) {
 print $out_str;
 
 if ($#sample_list > 0) {
-	my $sth_gt_ins = $dbh->prepare("insert into /*+ APPEND */ patient_genotyping values(?,?)");
-	$sth_gt_ins->execute($patient_id, $out_str);
+	my $sth_gt_ins = $dbh->prepare("insert into /*+ APPEND */ patient_genotyping values(?,?,?)");
+	$sth_gt_ins->execute($patient_id, $out_str, $genome_version);
 }
 
 $dbh->disconnect();

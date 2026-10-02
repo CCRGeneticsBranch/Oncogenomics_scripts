@@ -761,10 +761,10 @@ foreach my $patient_dir (@patient_dirs) {
 		}
 
 		#process Genotyping
-		if ($load_type eq "genotyping") {
+		if ($load_type eq "all" || $load_type eq "genotyping") {
 			my $r_option = "-r";
-			print_log("processing genotyping: $script_dir/scorePatientGenotypes.pl -p $patient_id $r_option");
-			system("$script_dir/scorePatientGenotypes.pl -p $patient_id $r_option");			
+			print_log("processing genotyping: $script_dir/scorePatientGenotypes.pl -p $patient_id -g $genome_version $r_option");
+			system("$script_dir/scorePatientGenotypes.pl -p $patient_id -g $genome_version $r_option");			
 		}
 
 		

@@ -80,6 +80,14 @@ select project_id, diagnosis, gene,type,'germline' as tier_type, germline_level 
   where p.patient_id=p2.patient_id and p.patient_id=v.patient_id) co
   group by project_id,diagnosis, gene,type,somatic_level;
 end
+my $var_pathogenic = <<'end';
+select distinct patient_id,case_id,diagnosis,chromosome,start_pos,end_pos,ref,alt,gene from(
+(select v.patient_id,v.case_id, p.diagnosis, v.chromosome,v.start_pos,v.end_pos,v.ref,v.alt,gene from var_sample_avia_oc v,patients p 
+where v.clinvar__sig in ('Pathogenic','Likely pathogenic','Pathogenic/Likely pathogenic') and v.intervar__significance in ('Pathogenic', 'Likely Pathogenic') and v.patient_id=p.patient_id)
+union
+(select a.patient_id,a.case_id, p.diagnosis, v.chromosome,v.start_pos,v.end_pos,v.ref,v.alt,gene from var_qci_annotation a,var_sample_avia_oc v,patients p 
+where a.patient_id=v.patient_id and a.case_id=v.case_id and a.qci_assessment in ('Pathogenic', 'Likely Pathogenic') and a.chromosome=v.chromosome and a.position=to_char(v.start_pos) and a.ref=v.ref and a.alt=v.alt and a.patient_id=p.patient_id))
+end
 my $project_gene_tier = <<'end';
 select project_id, gene,type,'germline' as tier,germline_level as tier_type, count(patient_id) as cnt from (select distinct p.project_id, v.gene, v.type, p.patient_id, v.germline_level from var_gene_tier v, project_patients p
   where p.patient_id=v.patient_id) co1
@@ -421,6 +429,7 @@ if ($refresh_all || $do_cohort) {
   do_insert('project_diagnosis_gene_tier', $project_diagnosis_gene_tier, 1);
   do_insert('project_gene_tier',$project_gene_tier, 1);
   do_insert('var_tier_avia_count', $var_tier_avia_count, 1);
+  do_insert('var_pathogenic', $var_pathogenic, 1);
   if ($db_type eq "oracle") {
     do_insert('var_top20', $var_top20, 1);
   }
