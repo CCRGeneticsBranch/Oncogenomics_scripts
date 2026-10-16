@@ -26,6 +26,7 @@ required options:
 
   -g  <string>  Genome (default: $genome)
   -r            Refresh view
+  -n  <integer> Commit after <n> inserts (default: no early commits)
   
 __EOUSAGE__
 
@@ -33,7 +34,8 @@ __EOUSAGE__
 
 GetOptions (
   'g=s' => \$genome,
-  'r' => \$refresh_view
+  'r' => \$refresh_view,
+  'n=i' => \$num_commit
 );
 
 my $table_name="${genome}_annot_oc";
@@ -87,12 +89,17 @@ while (<IN_FILE>) {
 		$sth->bind_param( $i+1, $fields[$i]);
 	}
 	try {
+		#print_log("doing insert");
 		$sth->execute();
+		#print_log("done insert");
 		$total_insert++;
 	} catch {
 		if (/unique constraint/) {
 			my $var = "$fields[0]:$fields[1]-$fields[2] $fields[3]>$fields[4]";
-			#print_log("The variant $var already exists!");
+			print_log("The variant $var already exists!");
+		} else {
+			my $var = "$fields[0]:$fields[1]-$fields[2] $fields[3]>$fields[4]";
+			print_log("Error: $var");
 		}
 	};
 	

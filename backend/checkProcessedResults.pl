@@ -11,7 +11,7 @@ require(dirname(abs_path($0))."/../lib/Onco.pm");
 
 my $script_dir = dirname(__FILE__);
 
-my $production_url = getConfig("URL_PRODUCTION");
+my $production_url = getConfig("URL_LINK");
 my $project_file = abs_path($script_dir."/../../../storage/sync/project_mapping.txt");
 my %project_mapping = ();
 open (PRJ, $project_file);

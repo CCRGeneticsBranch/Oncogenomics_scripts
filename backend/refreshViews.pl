@@ -88,6 +88,12 @@ union
 (select a.patient_id,a.case_id, p.diagnosis, v.chromosome,v.start_pos,v.end_pos,v.ref,v.alt,gene from var_qci_annotation a,var_sample_avia_oc v,patients p 
 where a.patient_id=v.patient_id and a.case_id=v.case_id and a.qci_assessment in ('Pathogenic', 'Likely Pathogenic') and a.chromosome=v.chromosome and a.position=to_char(v.start_pos) and a.ref=v.ref and a.alt=v.alt and a.patient_id=p.patient_id))
 end
+if ($db_type eq "mysql") {
+  $var_pathogenic = <<'end';
+select distinct v.patient_id,v.case_id, p.diagnosis, v.chromosome,v.start_pos,v.end_pos,v.ref,v.alt,gene from var_sample_avia_oc v,patients p 
+where v.clinvar__sig in ('Pathogenic','Likely pathogenic','Pathogenic/Likely pathogenic') and v.intervar__significance in ('Pathogenic', 'Likely Pathogenic') and v.patient_id=p.patient_id
+end
+}
 my $project_gene_tier = <<'end';
 select project_id, gene,type,'germline' as tier,germline_level as tier_type, count(patient_id) as cnt from (select distinct p.project_id, v.gene, v.type, p.patient_id, v.germline_level from var_gene_tier v, project_patients p
   where p.patient_id=v.patient_id) co1
@@ -106,10 +112,10 @@ my $project_mview = <<end;
 select distinct id,name,description,ispublic,patients,cases,samples,processed_patients,processed_cases,version,survival,exome,panel,rnaseq,whole_genome,chipseq,hic,status,user_id,created_by,updated_at from 
         (select p1.id, p1.name, p1.description, p1.ispublic, 
           (select count(distinct patient_id) from project_cases s where p1.id=s.project_id) as patients,
-                  (select count(distinct case_name) from project_cases s where p1.id=s.project_id) as cases,
+                  (select count(*) from (select distinct patient_id,case_name from project_cases s where p1.id=s.project_id) cp1) as cases,
                   (select count(distinct sample_id) from project_samples s where p1.id=s.project_id) as samples,
           (select count(distinct patient_id) from project_processed_cases s where p1.id=s.project_id) as processed_patients,
-                  (select count(distinct case_id) from project_processed_cases s where p1.id=s.project_id) as processed_cases,
+                  (select count(*) from (select distinct patient_id, case_id from project_processed_cases s where p1.id=s.project_id) cp2) as processed_cases,
           $version,
           (select count(distinct c1.patient_id) from project_patients c1, patient_details c2 where p1.id=c1.project_id and c1.patient_id=c2.patient_id and class='overall_survival') as survival,
           (select count(distinct sample_id) from project_samples c1 where c1.project_id=p1.id and c1.exp_type='Exome') as exome,
@@ -254,6 +260,22 @@ select project_id, gene, type,count(patient_id) as cnt from (select distinct pro
   group by project_id, gene, type;
 
 end
+my $alteration_fusion_name = "v.left_gene || '::' || v.right_gene";
+if ($db_type eq "mysql") {
+  $alteration_fusion_name = "CONCAT(v.left_gene, '::', v.right_gene)";
+}
+# Retain tier suffixes (1A, 1B, etc.) so readers can select a tier prefix.
+my $var_alteration = <<end;
+select p.project_id, v.patient_id, $alteration_fusion_name as alteration,
+  'fusion' as alteration_type, v.var_level as tier
+from project_samples p join var_fusion v on v.sample_id=p.sample_id and v.patient_id=p.patient_id
+where v.var_level is not null
+union
+select p.project_id, v.patient_id, v.gene as alteration,
+  'mutation' as alteration_type, substr(v.somatic_level, 6) as tier
+from project_samples p join var_tier_avia v on v.sample_id=p.sample_id and v.patient_id=p.patient_id
+where v.type in ('somatic', 'variant', 'rnaseq') and v.somatic_level like 'Tier %'
+end
 my $var_gene_tier = <<'end';
 select distinct p1.patient_id, p1.type, p1.gene, canonicalprotpos, germline_level, somatic_level from var_tier_avia p1,
   hg19_annot_oc a where
@@ -355,6 +377,7 @@ my %var_diagnosis_aa_cohort_indexes = ( "var_diagnosis_aa_cohort_idx" => "projec
 my %var_diagnosis_gene_cohort_indexes = ( "var_diagnosis_gene_cohort_idx" => "project_id, diagnosis, gene, type" );
 my %var_aa_cohort_oc_indexes = ( "var_aa_cohort_oc_idx" => "project_id, gene, type" );
 my %var_gene_cohort_indexes = ( "var_gene_cohort_idx" => "project_id, gene, type" );
+my %var_alteration_indexes = ( "var_alteration_prj_tier_idx" => "project_id, tier" );
 my %var_gene_tier_indexes = ( "var_gene_tier_patient" => "patient_id" );
 my %var_genes_indexes = ( "var_genes_gene" => "gene" );
 
@@ -418,6 +441,7 @@ if ($refresh_all || $do_genotyping) {
 
 if ($refresh_all || $do_cohort) {
   print_log("Refrshing cohort views...on $sid");
+  do_create('var_alteration', $var_alteration, \%var_alteration_indexes);
   do_insert('var_qci_cohort', $var_qci_cohort, 1);
   do_create('var_aa_cohort_oc', $var_aa_cohort_oc, \%var_aa_cohort_oc_indexes);
   do_create('var_genes', $var_genes, \%var_genes_indexes);
