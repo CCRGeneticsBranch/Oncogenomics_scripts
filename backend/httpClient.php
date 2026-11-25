@@ -10,8 +10,9 @@ function getResponse($url) {
     $curl = curl_init($url);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 0);
+    curl_setopt($curl, CURLOPT_USERAGENT, 'Clinomics-tier-import/1.0');
     $curl_response = curl_exec($curl);
-    curl_close ($curl);
+    #curl_close ($curl);
     return $curl_response;
 }
 

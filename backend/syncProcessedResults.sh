@@ -82,7 +82,7 @@ do
 
 					folder=${pat_id}/${case_id}
 					echo [`date +"%Y-%m-%d %H:%M:%S"`] "$pat_id $case_id $status" >> ${log_file}
-					if [[ $status == "successful.txt" ]];then
+					if [[ $status == "successful.txt" || $status == "successful_hg38.txt" ]];then
 						
 						mkdir -p ${project_home}/${pat_id}
 						chmod -f 770 ${project_home}/${pat_id}
@@ -161,14 +161,14 @@ do
 done < $project_file
 
 if [ "$target_type" == "db" ];then
+	echo [`date +"%Y-%m-%d %H:%M:%S"`] "updateing case name/ID" >> ${log_file}
+	LC_ALL="en_US.utf8" ${script_home}/updateVarCases.pl >> ${log_file}	
 	echo [`date +"%Y-%m-%d %H:%M:%S"`] "exporting hg19 new variants" >> ${log_file}
 	LC_ALL="en_US.utf8" ${script_home}/export_new_variants.pl >> ${log_file}
 	echo [`date +"%Y-%m-%d %H:%M:%S"`] "exporting hg38 new variants" >> ${log_file}
 	LC_ALL="en_US.utf8" ${script_home}/export_new_variants.pl -g hg38>> ${log_file}
 	echo [`date +"%Y-%m-%d %H:%M:%S"`] "refreshing views -c" >> ${log_file}
 	LC_ALL="en_US.utf8" ${script_home}/refreshViews.pl -c -h >> ${log_file}
-	echo [`date +"%Y-%m-%d %H:%M:%S"`] "updateing case name/ID" >> ${log_file}
-	LC_ALL="en_US.utf8" ${script_home}/updateVarCases.pl >> ${log_file}	
 fi
 if [ "$target_type" == "bam" ];then
 	LC_ALL="en_US.utf8" ${script_home}/checkProcessedResults.pl >> ${log_file}

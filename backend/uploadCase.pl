@@ -1722,7 +1722,7 @@ sub insertTier {
 	}
 	my $curl = "$url/getVarTier/$patient_id/$case_id/$type/$sample_id/avia";
 	print "$curl\n";#hv
-	my @lines = readpipe("php $script_dir/httpClient.php url=$curl");
+	my @lines = readpipe("php -d display_errors=stderr $script_dir/httpClient.php url=$curl");
 	
 	#my( $status, $results ) = getWithStatus( $curl );
 	#print "$status\n";#hv

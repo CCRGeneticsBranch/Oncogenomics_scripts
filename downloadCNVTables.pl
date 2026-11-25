@@ -81,21 +81,56 @@ $sth_cnv->execute();
 
 system("mkdir -p $out_dir/$project_id/cnv");
 my $summary_file = "$out_dir/$project_id/cnv/$project_id.$type.summary.tsv";
-system("echo -e 'Patient ID\tCase ID\tSample ID\tNon-diploid Length\tTotal Length\tRatio\tA\tC\tGI\tTotal segments' > $summary_file");
+open(my $summary_fh, '>', $summary_file)
+  or die "Cannot write $summary_file: $!";
+print $summary_fh join("\t",
+  "Patient ID", "Case ID", "Sample ID",
+  "Non-diploid Length", "Total Length", "Ratio",
+  "A", "C", "GI", "Total segments"
+), "\n";
+close($summary_fh);
+
 while (my ($patient_id, $case_id, $sample_id) = $sth_cnv->fetchrow_array) {
   my $out_file_tmp = "$out_dir/$project_id/cnv/$patient_id-$case_id-$sample_id.$type.tmp";
   my $out_file = "$out_dir/$project_id/cnv/$patient_id-$case_id-$sample_id.$type.txt";
-  #system("curl -X POST -F patient_id=$patient_id -F case_id=$case_id -F sample_id=$sample_id -F source=$type $url > $out_file_tmp");
-  print("curl $url/$token/$patient_id/$case_id/$sample_id/$type > $out_file_tmp\n");
-  system("curl $url/$token/$patient_id/$case_id/$sample_id/$type > $out_file_tmp");
+
+  system(
+    'curl', '--fail', '--silent', '--show-error',
+    '--user-agent', 'Clinomics-CNV-download/1.0',
+    '--output', $out_file_tmp,
+    "$url/$token/$patient_id/$case_id/$sample_id/$type"
+  ) == 0 or die "CNV download failed for $patient_id/$case_id/$sample_id\n";
+
   if ($type eq "sequenza") {
-    system("echo -e '".$patient_id."\\t".$case_id."\\t".$sample_id."\\t\\c' >> $summary_file");
-    system("head -2 $out_file_tmp | tail -1 >> $summary_file");
-    system("tail -n +3 $out_file_tmp > $out_file");
+    open(my $input_fh, '<', $out_file_tmp)
+      or die "Cannot read $out_file_tmp: $!";
+
+    <$input_fh>; # Skip the downloaded header.
+    my $summary_line = <$input_fh>;
+    defined($summary_line)
+      or die "Missing CNV summary for $patient_id/$case_id/$sample_id\n";
+    $summary_line =~ s/\r?\n$//;
+
+    open(my $append_fh, '>>', $summary_file)
+      or die "Cannot append to $summary_file: $!";
+    print $append_fh "$patient_id\t$case_id\t$sample_id\t$summary_line\n";
+    close($append_fh);
+
+    open(my $output_fh, '>', $out_file)
+      or die "Cannot write $out_file: $!";
+    while (my $line = <$input_fh>) {
+      print $output_fh $line;
+    }
+    close($output_fh);
+    close($input_fh);
   } else {
-    system("cp $out_file_tmp $out_file");
+    require File::Copy;
+    File::Copy::copy($out_file_tmp, $out_file)
+      or die "Cannot copy $out_file_tmp to $out_file: $!";
   }
-  system("rm $out_file_tmp");
+
+  unlink($out_file_tmp)
+    or warn "Cannot remove $out_file_tmp: $!";
 }
 $sth_cnv->finish;
 
